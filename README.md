@@ -1,49 +1,39 @@
-Phonebook
+# 📞 Phonebook
 
-An internal directory for looking up officers by name, phone number, certification, and role.
+An internal directory web application for searching and looking up officers by name, phone number, certifications, and roles.
 
-Tech stack
-Next.js (App Router) — frontend and server
-PostgreSQL via Supabase — database
-Drizzle ORM — schema, queries, and migrations
-Data model
+---
 
-Each officer can have multiple phone numbers, multiple certifications, and multiple roles. See db/schema.ts for the full table definitions:
+## 🛠️ Tech Stack
 
-officers — core record (name, etc.)
-phones — one-to-many with officers
-certs / officer_certs — many-to-many, officer ↔ certification
-roles / officer_roles — many-to-many, officer ↔ role
-Getting started
+- **Framework:** Next.js (App Router)
+- **Database:** PostgreSQL (hosted via [Supabase](https://supabase.com/))
+- **ORM:** Drizzle ORM (schema definition, type safety, and migrations)
+- **Language:** TypeScript
 
-1. Install dependencies
-   bash
-   npm install
-2. Set up environment variables
+---
 
-Create a .env.local file in the project root:
+## 📊 Data Model
 
-bash
-DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
+The database uses a relational model to handle one-to-many and many-to-many relationships for officers:
 
-Get this from your Supabase project → Project Settings → Database → Connection string. .env.local is git-ignored — never commit real credentials.
+- `officers` — Core record (name, badge ID, basic details).
+- `phones` — One-to-many relationship with `officers`.
+- `certs` / `officer_certs` — Many-to-many relationship (`officer` ↔ `certification`).
+- `roles` / `officer_roles` — Many-to-many relationship (`officer` ↔ `role`).
 
-3. Run database migrations
-   bash
-   npx drizzle-kit generate # generate SQL from db/schema.ts
-   npx drizzle-kit migrate # apply it to your database
-4. (Optional) Browse the database visually
-   bash
-   npx drizzle-kit studio
-5. Start the dev server
-   bash
-   npm run dev
+> 📌 **Source of Truth:** All schema structures are defined in `db/schema.ts`.
 
-Visit http://localhost:3000.
+---
 
-Project structure
-app/ Next.js routes and UI
-db/
-schema.ts Table definitions (source of truth for the database)
-index.ts Database connection client
-drizzle.config.ts Config for the drizzle-kit CLI
+## 📂 Project Structure
+
+```text
+├── app/                  # Next.js App Router (pages, API routes, UI components)
+├── db/                   # Database configuration & schema
+│   ├── index.ts          # Supabase / Postgres database client instance
+│   └── schema.ts         # Drizzle schema definitions
+├── drizzle/              # Generated SQL migration files (auto-generated)
+├── drizzle.config.ts     # Drizzle Kit CLI configuration
+└── .env.local            # Environment variables (Git-ignored)
+```
