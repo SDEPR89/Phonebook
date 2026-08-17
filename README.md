@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Phonebook
 
-## Getting Started
+An internal directory for looking up officers by name, phone number, certification, and role.
 
-First, run the development server:
+Tech stack
+Next.js (App Router) — frontend and server
+PostgreSQL via Supabase — database
+Drizzle ORM — schema, queries, and migrations
+Data model
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Each officer can have multiple phone numbers, multiple certifications, and multiple roles. See db/schema.ts for the full table definitions:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+officers — core record (name, etc.)
+phones — one-to-many with officers
+certs / officer_certs — many-to-many, officer ↔ certification
+roles / officer_roles — many-to-many, officer ↔ role
+Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies
+   bash
+   npm install
+2. Set up environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a .env.local file in the project root:
 
-## Learn More
+bash
+DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
 
-To learn more about Next.js, take a look at the following resources:
+Get this from your Supabase project → Project Settings → Database → Connection string. .env.local is git-ignored — never commit real credentials.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Run database migrations
+   bash
+   npx drizzle-kit generate # generate SQL from db/schema.ts
+   npx drizzle-kit migrate # apply it to your database
+4. (Optional) Browse the database visually
+   bash
+   npx drizzle-kit studio
+5. Start the dev server
+   bash
+   npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Visit http://localhost:3000.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project structure
+app/ Next.js routes and UI
+db/
+schema.ts Table definitions (source of truth for the database)
+index.ts Database connection client
+drizzle.config.ts Config for the drizzle-kit CLI
