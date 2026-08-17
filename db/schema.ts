@@ -8,11 +8,22 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+// Reusable set of audit columns — every table gets the same three,
+// so the pattern is consistent and easy to recognize everywhere.
+const timestamps = {
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at"), // null = active, set = soft-deleted
+};
+
 // --- Core entity: officers ---------------------------------------------
 export const officers = pgTable("officers", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  ...timestamps,
 });
 
 // --- One-to-many: an officer has many phone numbers ---------------------
@@ -21,14 +32,17 @@ export const phones = pgTable("phones", {
   officerId: uuid("officer_id")
     .notNull()
     .references(() => officers.id, { onDelete: "cascade" }),
-  phoneNumber: varchar("phone_number", { length: 32 }).notNull(),
+  // unique(): no two officers can share the same phone number
+  phoneNumber: varchar("phone_number", { length: 32 }).notNull().unique(),
   label: varchar("label", { length: 64 }), // e.g. "mobile", "desk"
+  ...timestamps,
 });
 
-// --- Lookup table: the fixed list of certifications ---------------------
+// --- Lookup table: the fixed list of certs (organizations/agencies) -----
 export const certs = pgTable("certs", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 128 }).notNull().unique(),
+  ...timestamps,
 });
 
 // --- Junction table: many-to-many between officers and certs ------------
@@ -41,7 +55,7 @@ export const officerCerts = pgTable(
     certId: uuid("cert_id")
       .notNull()
       .references(() => certs.id, { onDelete: "cascade" }),
-    issuedDate: date("issued_date"),
+    ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.officerId, table.certId] })],
 );
@@ -50,6 +64,7 @@ export const officerCerts = pgTable(
 export const roles = pgTable("roles", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 128 }).notNull().unique(),
+  ...timestamps,
 });
 
 // --- Junction table: many-to-many between officers and roles ------------
@@ -62,6 +77,7 @@ export const officerRoles = pgTable(
     roleId: uuid("role_id")
       .notNull()
       .references(() => roles.id, { onDelete: "cascade" }),
+    ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.officerId, table.roleId] })],
 );
