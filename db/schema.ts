@@ -23,6 +23,7 @@ const timestamps = {
 export const officers = pgTable("officers", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).unique(),
   ...timestamps,
 });
 
