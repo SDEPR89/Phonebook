@@ -1,0 +1,1 @@
+ALTER TABLE "phones" DROP COLUMN "label";

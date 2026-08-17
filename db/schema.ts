@@ -35,7 +35,6 @@ export const phones = pgTable("phones", {
     .references(() => officers.id, { onDelete: "cascade" }),
   // unique(): no two officers can share the same phone number
   phoneNumber: varchar("phone_number", { length: 32 }).notNull().unique(),
-  label: varchar("label", { length: 64 }), // e.g. "mobile", "desk"
   ...timestamps,
 });
 

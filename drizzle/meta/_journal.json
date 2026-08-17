@@ -15,6 +15,13 @@
       "when": 1786953790129,
       "tag": "0001_fix_officers_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786954372680,
+      "tag": "0002_fix_phones_table",
+      "breakpoints": true
     }
   ]
 }
