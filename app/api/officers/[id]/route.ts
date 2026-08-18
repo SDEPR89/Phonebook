@@ -12,9 +12,9 @@ import { eq, isNull, and } from "drizzle-orm";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const officerId = params.id;
+  const { id: officerId } = await params;
 
   // Basic sanity check: is this even a valid UUID shape?
   // (Prevents wasting a DB call on garbage input like "/api/officers/abc")

@@ -1,138 +1,9 @@
 {
-  "id": "69c59cbe-b672-44d6-844e-5b1a2d08e19b",
+  "id": "f646e700-f163-49e0-8427-5a0a690d5510",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.audit_logs": {
-      "name": "audit_logs",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "officer_id": {
-          "name": "officer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "action": {
-          "name": "action",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "target_entity": {
-          "name": "target_entity",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "target_id": {
-          "name": "target_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ip_address": {
-          "name": "ip_address",
-          "type": "varchar(45)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_agent": {
-          "name": "user_agent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "audit_logs_officer_id_idx": {
-          "name": "audit_logs_officer_id_idx",
-          "columns": [
-            {
-              "expression": "officer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "audit_logs_action_idx": {
-          "name": "audit_logs_action_idx",
-          "columns": [
-            {
-              "expression": "action",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "audit_logs_created_at_idx": {
-          "name": "audit_logs_created_at_idx",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "audit_logs_officer_id_officers_id_fk": {
-          "name": "audit_logs_officer_id_officers_id_fk",
-          "tableFrom": "audit_logs",
-          "tableTo": "officers",
-          "columnsFrom": [
-            "officer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.certs": {
       "name": "certs",
       "schema": "",
@@ -267,20 +138,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "field_name": {
-          "name": "field_name",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "reason": {
           "name": "reason",
-          "type": "text",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": true
         },
-        "suggested_data": {
-          "name": "suggested_data",
+        "details": {
+          "name": "details",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -290,7 +155,7 @@
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": true,
-          "default": "'pending'"
+          "default": "'reported'"
         },
         "admin_notes": {
           "name": "admin_notes",
@@ -352,6 +217,21 @@
           "columns": [
             {
               "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reports_reason_idx": {
+          "name": "reports_reason_idx",
+          "columns": [
+            {
+              "expression": "reason",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
