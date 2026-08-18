@@ -6,7 +6,6 @@ import {
   timestamp,
   primaryKey,
   index,
-  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -40,14 +39,25 @@ const timestamps = {
 export const SYSTEM_ROLES = ["officer", "admin", "superadmin"] as const;
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
-// Status of a "data correction" report submitted by an officer
+// Status of a problem report submitted regarding an officer
 export const REPORT_STATUSES = [
-  "pending", // รอดำเนินการ
-  "in_review", // กำลังตรวจสอบ
-  "resolved", // แก้ไขข้อมูลเรียบร้อยแล้ว
-  "rejected", // ปฏิเสธ (ข้อมูลถูกต้องอยู่แล้ว)
+  "reported", // แจ้งปัญหาเข้ามา
+  "resolved", // แก้ไขข้อมูล/จัดการเรียบร้อยแล้ว
+  "rejected", // ปฏิเสธ (ข้อมูลถูกต้องอยู่แล้ว หรือไม่พบปัญหา)
 ] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+// Choices for problem types reported (เช่น โทรไม่ติด, เบอร์โทรไม่ถูกต้อง ฯลฯ)
+export const REPORT_REASONS = [
+  "unreachable_phone", // โทรไม่ติด / ติดต่อไม่ได้
+  "wrong_phone", // เบอร์โทรศัพท์ไม่ถูกต้อง
+  "wrong_name", // ชื่อ-นามสกุลไม่ถูกต้อง
+  "wrong_cert", // สังกัด/หน่วยงานไม่ถูกต้อง
+  "wrong_role", // ตำแหน่งไม่ถูกต้อง
+  "resigned_or_moved", // ย้ายหน่วยงาน / ลาออก
+  "other", // อื่นๆ
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
 
 // =========================================================================
 // 3. Core Entities
@@ -172,13 +182,13 @@ export const officerRoles = pgTable(
 );
 
 // =========================================================================
-// 4. ระบบแจ้งข้อมูลผิดพลาด (Data Correction Reports)
+// 4. ระบบแจ้งปัญหาข้อมูล (Data Correction Reports)
 // =========================================================================
 export const dataCorrectionReports = pgTable(
   "data_correction_reports",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    // เจ้าของข้อมูลที่ถูกแจ้งว่าผิดพลาด
+    // เจ้าของข้อมูลที่ถูกแจ้งว่าเกิดปัญหา
     targetOfficerId: uuid("target_officer_id")
       .notNull()
       .references(() => officers.id, { onDelete: "cascade" }),
@@ -186,15 +196,13 @@ export const dataCorrectionReports = pgTable(
     reporterId: uuid("reporter_id").references(() => officers.id, {
       onDelete: "set null",
     }),
-    // หัวข้อหรือฟิลด์ที่ผิด (เช่น "phone", "email", "cert", "role", "name")
-    fieldName: varchar("field_name", { length: 64 }),
-    // รายละเอียดข้อความที่แจ้ง
-    reason: text("reason").notNull(),
-    // ข้อมูลที่ถูกต้องที่ผู้ใช้แนะนำ/เสนอแนะ
-    suggestedData: text("suggested_data"),
+    // หัวข้อ/ประเภทปัญหาที่เลือก (เช่น โทรไม่ติด, เบอร์โทรไม่ถูกต้อง ฯลฯ ดู REPORT_REASONS)
+    reason: varchar("reason", { length: 64 }).notNull(),
+    // รายละเอียดเพิ่มเติม (Optional)
+    details: text("details"),
 
-    // Allowed values: see REPORT_STATUSES above
-    status: varchar("status", { length: 32 }).notNull().default("pending"),
+    // Allowed values: "reported" | "resolved" | "rejected" (see REPORT_STATUSES above)
+    status: varchar("status", { length: 32 }).notNull().default("reported"),
 
     // บันทึกการจัดการของ Admin
     adminNotes: text("admin_notes"),
@@ -207,41 +215,13 @@ export const dataCorrectionReports = pgTable(
   (table) => [
     index("reports_target_officer_id_idx").on(table.targetOfficerId),
     index("reports_status_idx").on(table.status),
+    index("reports_reason_idx").on(table.reason),
     index("reports_created_at_idx").on(table.createdAt),
   ],
 );
 
 // =========================================================================
-// 5. ระบบจัดการประวัติการใช้งาน (Log Management / Audit Logs)
-// =========================================================================
-export const auditLogs = pgTable(
-  "audit_logs",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    // ผู้กระทำ (null กรณีเป็น Guest search หรือ system)
-    officerId: uuid("officer_id").references(() => officers.id, {
-      onDelete: "set null",
-    }),
-    // การกระทำ เช่น SEARCH, PROFILE_UPDATE, ADMIN_ADD_USER, REPORT_SUBMIT, RESOLVE_REPORT
-    action: varchar("action", { length: 64 }).notNull(),
-    // Entity ปลายทาง เช่น "officers", "data_correction_reports"
-    targetEntity: varchar("target_entity", { length: 64 }),
-    targetId: uuid("target_id"),
-    // ข้อมูลประกอบการทำรายการ (เช่น search query, diff ข้อมูลเก่า-ใหม่)
-    metadata: jsonb("metadata"),
-    ipAddress: varchar("ip_address", { length: 45 }),
-    userAgent: text("user_agent"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("audit_logs_officer_id_idx").on(table.officerId),
-    index("audit_logs_action_idx").on(table.action),
-    index("audit_logs_created_at_idx").on(table.createdAt),
-  ],
-);
-
-// =========================================================================
-// 6. Relations (Drizzle Relational Queries)
+// 5. Relations (Drizzle Relational Queries)
 // =========================================================================
 export const officersRelations = relations(officers, ({ one, many }) => ({
   phone: one(phones, {
@@ -259,7 +239,6 @@ export const officersRelations = relations(officers, ({ one, many }) => ({
     relationName: "targetOfficer",
   }),
   submittedReports: many(dataCorrectionReports, { relationName: "reporter" }),
-  auditLogs: many(auditLogs),
 }));
 
 export const phonesRelations = relations(phones, ({ one }) => ({
@@ -323,9 +302,3 @@ export const dataCorrectionReportsRelations = relations(
   }),
 );
 
-export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
-  officer: one(officers, {
-    fields: [auditLogs.officerId],
-    references: [officers.id],
-  }),
-}));
