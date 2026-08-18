@@ -1,1 +1,0 @@
-ALTER TABLE "officers" ALTER COLUMN "email" SET NOT NULL;

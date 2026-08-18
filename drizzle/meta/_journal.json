@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1786951779417,
-      "tag": "0000_complete_db",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1786953790129,
-      "tag": "0001_fix_officers_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1786954372680,
-      "tag": "0002_fix_phones_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1787027027256,
-      "tag": "0003_fix_officers_table",
+      "when": 1787037321775,
+      "tag": "0000_DB_v1",
       "breakpoints": true
     }
   ]
