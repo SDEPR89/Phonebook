@@ -46,6 +46,7 @@ export const officers = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     email: varchar("email", { length: 255 }).unique(),
+    avatarUrl: text("avatar_url"), // รูปโปรไฟล์ของบุคคล (URL / Path)
     systemRole: systemRoleEnum("system_role").default("user").notNull(),
     ...timestamps,
   },
@@ -80,6 +81,7 @@ export const certs = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 128 }).notNull().unique(),
+    logoUrl: text("logo_url"), // รูปโลโก้/รูปของหน่วยงาน (URL / Path)
     ...timestamps,
   },
   (table) => [

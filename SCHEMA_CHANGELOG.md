@@ -6,7 +6,11 @@
 
 ## 🎯 สรุปการปรับปรุงระบบ (Overview of Changes)
 
-### 1. ระบบแจ้งข้อมูลผิดพลาด (`data_correction_reports`)
+### 1. ข้อมูลรูปภาพ (Profile & Organization Images)
+- **`officers.avatar_url` (Text):** ช่องเก็บ URL / Path สำหรับรูปโปรไฟล์ของแต่ละบุคคล
+- **`certs.logo_url` (Text):** ช่องเก็บ URL / Path สำหรับรูปภาพ/โลโก้ของแต่ละหน่วยงาน (Cert)
+
+### 2. ระบบแจ้งข้อมูลผิดพลาด (`data_correction_reports`)
 - **วัตถุประสงค์:** รองรับฟังก์ชันหน้า **Info page** (แจ้งเมื่อข้อมูลผิดพลาด) และ **Admin page** (ดูรายการแจ้งเตือนข้อมูลผิดพลาดเพื่อดำเนินการแก้ไข)
 - **โครงสร้างตาราง:**
   - `id`: UUID (Primary Key)
