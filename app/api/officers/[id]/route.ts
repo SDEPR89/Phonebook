@@ -9,7 +9,8 @@ import {
   roles,
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
-
+import { updateOfficerSchema } from "@/lib/validations";
+import { successResponse, errorResponse } from "@/lib/api-response";
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -74,4 +75,73 @@ export async function GET(
     certs: Array.from(result.certs),
     roles: Array.from(result.roles),
   });
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const targetId = params.id;
+
+    const body = await request.json();
+    const parsed = updateOfficerSchema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse("Invalid input", 400, parsed.error);
+    }
+
+    const data = parsed.data;
+
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.systemRole !== undefined) {
+      updateData.systemRole = data.systemRole;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      updateData.updatedAt = new Date();
+      await db.update(officers).set(updateData).where(eq(officers.id, targetId));
+    }
+
+    // Update phone if provided
+    if (data.phoneNumber !== undefined) {
+      if (data.phoneNumber === null) {
+        // Soft delete phone
+        await db.update(phones).set({ deletedAt: new Date() }).where(eq(phones.officerId, targetId));
+      } else {
+        // Check if exists
+        const existingPhone = await db.select().from(phones).where(eq(phones.officerId, targetId)).limit(1);
+        if (existingPhone.length > 0) {
+          await db.update(phones).set({ phoneNumber: data.phoneNumber, deletedAt: null, updatedAt: new Date() }).where(eq(phones.officerId, targetId));
+        } else {
+          await db.insert(phones).values({ officerId: targetId, phoneNumber: data.phoneNumber });
+        }
+      }
+    }
+
+    return successResponse({ success: true });
+  } catch (error: any) {
+    console.error(error);
+    return errorResponse("Internal server error", 500, error.message);
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const targetId = params.id;
+
+    // Soft delete
+    await db.update(officers).set({ deletedAt: new Date() }).where(eq(officers.id, targetId));
+    await db.update(phones).set({ deletedAt: new Date() }).where(eq(phones.officerId, targetId));
+
+    return successResponse({ success: true });
+  } catch (error: any) {
+    console.error(error);
+    return errorResponse("Internal server error", 500, error.message);
+  }
 }
