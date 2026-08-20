@@ -10,67 +10,200 @@ import {
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
 
+//GET officer deetails with timestamp
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const officerId = params.id;
+  try {
+    const { id: officerId } = await params;
+    const [officer] = await db
+      .select()
+      .from(officers)
+      .where(and(eq(officers.id, officerId), isNull(officers.deletedAt)));
+    if (!officer) {
+      return NextResponse.json({ error: "Officer not found" }, { status: 404 });
+    }
 
-  const uuidPattern =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidPattern.test(officerId)) {
-    return NextResponse.json({ error: "Invalid officer id" }, { status: 400 });
+    const [phoneRecord] = await db
+      .select()
+      .from(phones)
+      .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+
+    return NextResponse.json({
+      ...officer,
+      phoneNumber: phoneRecord?.phoneNumber ?? "",
+    });
+  } catch (err) {
+    console.error("GET officer error:", err);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
+}
 
-  const rows = await db
-    .select({
-      officerId: officers.id,
-      name: officers.name,
-      email: officers.email,
-      phoneNumber: phones.phoneNumber,
-      certName: certs.name,
-      roleName: roles.name,
-    })
-    .from(officers)
-    .leftJoin(
-      phones,
-      and(eq(phones.officerId, officers.id), isNull(phones.deletedAt)),
-    )
-    .leftJoin(officerCerts, eq(officerCerts.officerId, officers.id))
-    .leftJoin(certs, eq(certs.id, officerCerts.certId))
-    .leftJoin(
-      officerCertRoles,
-      eq(officerCertRoles.officerCertId, officerCerts.id),
-    )
-    .leftJoin(roles, eq(roles.id, officerCertRoles.roleId))
-    .where(and(eq(officers.id, officerId), isNull(officers.deletedAt)));
+// PUT to update Officer, Phone, Cert, and Role
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id: officerId } = await params;
 
-  if (rows.length === 0) {
-    return NextResponse.json({ error: "Officer not found" }, { status: 404 });
+    if (!officerId) {
+      return NextResponse.json(
+        { error: "Officer ID required" },
+        { status: 400 },
+      );
+    }
+
+    const formData = await request.formData();
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const phone = formData.get("phone") as string;
+    const certName = formData.get("cert") as string;
+    const roleName = formData.get("role") as string;
+    const avatarFile = formData.get("avatar") as File | null;
+
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: "Name and Email are required" },
+        { status: 400 },
+      );
+    }
+
+    let avatarUrl: string | undefined = undefined;
+    if (avatarFile && avatarFile.size > 0) {
+      const buffer = Buffer.from(await avatarFile.arrayBuffer());
+      avatarUrl = `data:${avatarFile.type};base64,${buffer.toString("base64")}`;
+    }
+
+    // 1. Update Officer Details
+    const updatePayload: {
+      name: string;
+      email: string;
+      avatarUrl?: string;
+      updatedAt: Date;
+    } = {
+      name: name.trim(),
+      email: email.trim(),
+      updatedAt: new Date(),
+    };
+    if (avatarUrl !== undefined) {
+      updatePayload.avatarUrl = avatarUrl;
+    }
+
+    await db
+      .update(officers)
+      .set(updatePayload)
+      .where(eq(officers.id, officerId));
+    // 2. Update Phone Number
+    if (phone !== null) {
+      const existingPhone = await db
+        .select()
+        .from(phones)
+        .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+
+      if (existingPhone.length > 0) {
+        await db
+          .update(phones)
+          .set({ phoneNumber: phone.trim(), updatedAt: new Date() })
+          .where(eq(phones.id, existingPhone[0].id));
+      } else if (phone.trim()) {
+        await db.insert(phones).values({
+          officerId,
+          phoneNumber: phone.trim(),
+        });
+      }
+    }
+
+    // 3. Update Cert & Role
+    if (certName && certName.trim()) {
+      let [existingCert] = await db
+        .select()
+        .from(certs)
+        .where(eq(certs.name, certName.trim()));
+
+      if (!existingCert) {
+        [existingCert] = await db
+          .insert(certs)
+          .values({ name: certName.trim() })
+          .returning();
+      }
+
+      const existingOfficerCert = await db
+        .select()
+        .from(officerCerts)
+        .where(eq(officerCerts.officerId, officerId));
+
+      let officerCertId: string;
+      if (existingOfficerCert.length > 0) {
+        officerCertId = existingOfficerCert[0].id;
+        await db
+          .update(officerCerts)
+          .set({ certId: existingCert.id })
+          .where(eq(officerCerts.id, officerCertId));
+      } else {
+        const [newOfficerCert] = await db
+          .insert(officerCerts)
+          .values({ officerId, certId: existingCert.id })
+          .returning();
+        officerCertId = newOfficerCert.id;
+      }
+
+      if (roleName && roleName.trim()) {
+        let [existingRole] = await db
+          .select()
+          .from(roles)
+          .where(eq(roles.name, roleName.trim()));
+
+        if (!existingRole) {
+          [existingRole] = await db
+            .insert(roles)
+            .values({ name: roleName.trim() })
+            .returning();
+        }
+
+        // Delete & Re-insert link for composite keys
+        await db
+          .delete(officerCertRoles)
+          .where(eq(officerCertRoles.officerCertId, officerCertId));
+
+        await db.insert(officerCertRoles).values({
+          officerCertId,
+          roleId: existingRole.id,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Failed to update officer:", err);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
+}
 
-  const first = rows[0];
-  const result = {
-    id: first.officerId,
-    name: first.name,
-    email: first.email,
-    phones: new Set<string>(),
-    certs: new Set<string>(),
-    roles: new Set<string>(),
-  };
+// DELETE for Soft Delete
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id: officerId } = await params;
+    const now = new Date();
 
-  for (const row of rows) {
-    if (row.phoneNumber) result.phones.add(row.phoneNumber);
-    if (row.certName) result.certs.add(row.certName);
-    if (row.roleName) result.roles.add(row.roleName);
+    // Soft delete officer
+    await db
+      .update(officers)
+      .set({ deletedAt: now })
+      .where(eq(officers.id, officerId));
+    // Soft delete linked phone numbers
+    await db
+      .update(phones)
+      .set({ deletedAt: now })
+      .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Failed to soft delete officer:", err);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
-
-  return NextResponse.json({
-    id: result.id,
-    name: result.name,
-    email: result.email,
-    phones: Array.from(result.phones),
-    certs: Array.from(result.certs),
-    roles: Array.from(result.roles),
-  });
 }

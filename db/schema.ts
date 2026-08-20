@@ -6,9 +6,9 @@ import {
   timestamp,
   primaryKey,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-
 // =========================================================================
 // 1. Reusable Timestamps
 // =========================================================================
@@ -178,7 +178,16 @@ export const dataCorrectionReports = pgTable(
     index("reports_created_at_idx").on(table.createdAt),
   ],
 );
-
+export const auditLogs = pgTable("audit_logs", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  officerId: text("officer_id").notNull(),
+  officerName: text("officer_name").notNull(),
+  action: text("action").notNull(), // 'CREATED', 'UPDATED', 'DELETED'
+  changes: jsonb("changes"), // e.g. { field: "email", old: "a@b.com", new: "c@d.com" }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 // =========================================================================
 // 5. Relations
 // =========================================================================
