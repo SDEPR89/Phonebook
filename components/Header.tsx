@@ -11,7 +11,7 @@ export default function Header() {
   const router = useRouter();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [certs, setCerts] = useState<string[]>([]);
+  const [certList, setCertList] = useState<string[]>([]);
   const [loadingCerts, setLoadingCerts] = useState(false);
 
   // Hide search bar ONLY on the root home page ("/")
@@ -19,21 +19,21 @@ export default function Header() {
 
   // Fetch certificates when drawer is first opened
   useEffect(() => {
-    if (isDrawerOpen && certs.length === 0) {
+    if (isDrawerOpen && certList.length === 0) {
       setLoadingCerts(true);
       fetch("/api/certs")
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => {
           // Handles string array or objects array like [{ name: "Cert A" }]
-          const certNames = data.map((c: any) =>
-            typeof c === "string" ? c : c.name
-          );
-          setCerts(certNames);
+          const certNames = data
+            .map((c: any) => (typeof c === "string" ? c : c.name || c.certName))
+            .filter(Boolean);
+          setCertList(certNames);
         })
         .catch((err) => console.error("Failed to load certs:", err))
         .finally(() => setLoadingCerts(false));
     }
-  }, [isDrawerOpen, certs.length]);
+  }, [isDrawerOpen, certList.length]);
 
   const handleCertClick = (certName: string) => {
     setIsDrawerOpen(false);
@@ -89,26 +89,31 @@ export default function Header() {
       {isDrawerOpen && (
         <div
           onClick={() => setIsDrawerOpen(false)}
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300"
         />
       )}
 
       {/* Left Drawer Side Column */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
           isDrawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Drawer Header */}
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-              Search by...
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+                Search by Cert
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Select a CERT team to view officers
+              </p>
+            </div>
             <button
               onClick={() => setIsDrawerOpen(false)}
               aria-label="Close menu"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none"
             >
               <svg
                 className="h-5 w-5"
@@ -129,22 +134,23 @@ export default function Header() {
           {/* Cert List */}
           <div className="flex-1 overflow-y-auto p-4">
             {loadingCerts ? (
-              <div className="space-y-3 p-2">
-                <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
-                <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
-                <div className="h-10 rounded-xl bg-slate-100 animate-pulse" />
+              <div className="space-y-2 p-1">
+                <div className="h-11 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-11 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-11 rounded-xl bg-slate-100 animate-pulse" />
+                <div className="h-11 rounded-xl bg-slate-100 animate-pulse" />
               </div>
-            ) : certs.length > 0 ? (
-              <ul className="space-y-1">
-                {certs.map((cert) => (
+            ) : certList.length > 0 ? (
+              <ul className="space-y-1.5">
+                {certList.map((cert) => (
                   <li key={cert}>
                     <button
                       onClick={() => handleCertClick(cert)}
-                      className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-900 active:scale-95"
+                      className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-medium text-slate-700 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-900 hover:pl-5 active:scale-[0.98]"
                     >
                       <span className="truncate">{cert}</span>
                       <svg
-                        className="h-4 w-4 text-slate-400"
+                        className="h-4 w-4 text-slate-400 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-indigo-600"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

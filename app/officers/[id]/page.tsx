@@ -74,7 +74,7 @@ export default async function OfficerDetailPage({ params }: OfficerPageProps) {
       <div className="mx-auto max-w-2xl space-y-6">
         {/* Navigation */}
         <Link
-          href="/search"
+          href="/"
           className="inline-flex items-center text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline"
         >
           ← Back to Search

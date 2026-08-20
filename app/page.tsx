@@ -71,7 +71,7 @@ export default function HomePage() {
                 #7130a7 270px,
                 #5f1f90 270px,
                 #5d2688 350px,
-                #5c2a85 350px,
+                #54257b 350px,
                 #47217f 440px,
                 #3d1378 440px,
                 #3b0764 540px,

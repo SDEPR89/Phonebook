@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 type Suggestion = {
   id: string;
+  officerId?: string;
   text: string;
   profileUrl?: string | null;
 };
@@ -52,6 +53,20 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleSelectSuggestion = (item: Suggestion) => {
+    setQuery(item.text);
+    setIsOpen(false);
+
+    // Pass the full UUID directly
+    const targetOfficerId = item.officerId || item.id;
+
+    if (targetOfficerId) {
+      router.push(`/officers/${targetOfficerId}`);
+    } else {
+      router.push(`/search?q=${encodeURIComponent(item.text)}`);
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -74,10 +89,7 @@ export default function SearchBar() {
       );
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
-      const selected = suggestions[selectedIndex];
-      setQuery(selected.text);
-      setIsOpen(false);
-      router.push(`/search?q=${encodeURIComponent(selected.text)}`);
+      handleSelectSuggestion(suggestions[selectedIndex]);
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -136,11 +148,7 @@ export default function SearchBar() {
           {suggestions.map((item, index) => (
             <li
               key={`${item.id}-${index}`}
-              onClick={() => {
-                setQuery(item.text);
-                setIsOpen(false);
-                router.push(`/search?q=${encodeURIComponent(item.text)}`);
-              }}
+              onClick={() => handleSelectSuggestion(item)}
               onMouseEnter={() => setSelectedIndex(index)}
               className={`flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition ${
                 index === selectedIndex
