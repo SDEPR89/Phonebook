@@ -14,21 +14,22 @@ type SearchPageProps = {
   searchParams: Promise<{ q?: string }>;
 };
 
-type CertResultItem = {
-  key: string;
+type OfficerResultItem = {
   officerId: string;
   name: string;
   email: string;
   profileUrl: string | null;
-  certName: string;
-  roles: string[];
+  certs: {
+    certName: string;
+    roles: string[];
+  }[];
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams;
   const term = q?.trim() || "";
 
-  let results: CertResultItem[] = [];
+  let results: OfficerResultItem[] = [];
 
   if (term) {
     const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -69,48 +70,55 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         ),
       );
 
-    // Group by (officerId + certId) to create one distinct card per cert
-    const certMap = new Map<
+    // Group strictly by officerId
+    const officerMap = new Map<
       string,
       {
         officerId: string;
         name: string;
         email: string;
         profileUrl: string | null;
-        certName: string;
-        roles: Set<string>;
+        certsMap: Map<string, { certName: string; roles: Set<string> }>;
       }
     >();
 
     for (const row of rows) {
-      // Create a unique composite key for each officer-cert combination
-      const certKey = `${row.officerId}-${row.certId || "no-cert"}`;
-
-      if (!certMap.has(certKey)) {
-        certMap.set(certKey, {
+      if (!officerMap.has(row.officerId)) {
+        officerMap.set(row.officerId, {
           officerId: row.officerId,
           name: row.name,
           email: row.email,
           profileUrl: row.profileUrl,
-          certName: row.certName || "No Cert",
-          roles: new Set(),
+          certsMap: new Map(),
         });
       }
 
-      const entry = certMap.get(certKey)!;
-      if (row.roleName) {
-        entry.roles.add(row.roleName);
+      const officer = officerMap.get(row.officerId)!;
+
+      if (row.certName) {
+        const certKey = row.certId || row.certName;
+        if (!officer.certsMap.has(certKey)) {
+          officer.certsMap.set(certKey, {
+            certName: row.certName,
+            roles: new Set(),
+          });
+        }
+
+        if (row.roleName) {
+          officer.certsMap.get(certKey)!.roles.add(row.roleName);
+        }
       }
     }
 
-    results = Array.from(certMap.entries()).map(([key, item]) => ({
-      key,
-      officerId: item.officerId,
-      name: item.name,
-      email: item.email,
-      profileUrl: item.profileUrl,
-      certName: item.certName,
-      roles: Array.from(item.roles),
+    results = Array.from(officerMap.values()).map((officer) => ({
+      officerId: officer.officerId,
+      name: officer.name,
+      email: officer.email,
+      profileUrl: officer.profileUrl,
+      certs: Array.from(officer.certsMap.values()).map((c) => ({
+        certName: c.certName,
+        roles: Array.from(c.roles),
+      })),
     }));
   }
 
@@ -129,34 +137,45 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <ul className="space-y-3">
             {results.map((r) => (
               <li
-                key={r.key}
-                className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition hover:border-slate-700 hover:bg-slate-900"
+                key={r.officerId}
+                className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
               >
                 {r.profileUrl ? (
                   <img
                     src={r.profileUrl}
                     alt={r.name}
-                    className="h-12 w-12 rounded-full border border-slate-700 object-cover"
+                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-base font-semibold text-slate-200">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700">
                     {r.name.charAt(0).toUpperCase()}
                   </div>
                 )}
 
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-1">
                   <Link
                     href={`/officers/${r.officerId}`}
-                    className="text-lg font-semibold text-blue-400 transition hover:text-blue-300 hover:underline"
+                    className="text-lg font-semibold text-indigo-900 transition hover:text-indigo-700 hover:underline"
                   >
                     {r.name}
                   </Link>
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-slate-100">
-                      {r.certName}
-                    </span>
-                    {r.roles.length > 0 ? ` — ${r.roles.join(", ")}` : ""}
-                  </p>
+
+                  {r.certs.length > 0 ? (
+                    <div className="flex flex-col gap-0.5">
+                      {r.certs.map((c, idx) => (
+                        <p key={idx} className="text-sm text-slate-600">
+                          <span className="font-semibold text-slate-900">
+                            {c.certName}
+                          </span>
+                          {c.roles.length > 0
+                            ? ` — ${c.roles.join(", ")}`
+                            : ""}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400">No Certifications</p>
+                  )}
                 </div>
               </li>
             ))}
