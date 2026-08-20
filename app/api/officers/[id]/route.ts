@@ -5,7 +5,7 @@ import {
   phones,
   officerCerts,
   certs,
-  officerRoles,
+  officerCertRoles,
   roles,
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
@@ -16,8 +16,6 @@ export async function GET(
 ) {
   const officerId = params.id;
 
-  // Basic sanity check: is this even a valid UUID shape?
-  // (Prevents wasting a DB call on garbage input like "/api/officers/abc")
   const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidPattern.test(officerId)) {
@@ -40,16 +38,17 @@ export async function GET(
     )
     .leftJoin(officerCerts, eq(officerCerts.officerId, officers.id))
     .leftJoin(certs, eq(certs.id, officerCerts.certId))
-    .leftJoin(officerRoles, eq(officerRoles.officerId, officers.id))
-    .leftJoin(roles, eq(roles.id, officerRoles.roleId))
+    .leftJoin(
+      officerCertRoles,
+      eq(officerCertRoles.officerCertId, officerCerts.id),
+    )
+    .leftJoin(roles, eq(roles.id, officerCertRoles.roleId))
     .where(and(eq(officers.id, officerId), isNull(officers.deletedAt)));
 
-  // No rows at all means: officer doesn't exist, or was soft-deleted
   if (rows.length === 0) {
     return NextResponse.json({ error: "Officer not found" }, { status: 404 });
   }
 
-  // Same grouping trick as search, just collapsing to ONE officer object
   const first = rows[0];
   const result = {
     id: first.officerId,

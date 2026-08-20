@@ -12,50 +12,32 @@ import { relations } from "drizzle-orm";
 // =========================================================================
 // 1. Reusable Timestamps
 // =========================================================================
-// Every table gets the same three audit columns, so the pattern is
-// consistent and easy to recognize everywhere.
 const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
-  deletedAt: timestamp("deleted_at"), // null = active, timestamp = soft-deleted
+  deletedAt: timestamp("deleted_at"),
 };
 
 // =========================================================================
-// 2. Allowed value lists (replaces pgEnum)
+// 2. Allowed value lists
 // =========================================================================
-// These are NOT database enums on purpose — enums are painful to alter
-// later (adding/removing a value requires a special migration). Instead,
-// the column is a plain varchar, and the allowed values are enforced in
-// application code (e.g. a Zod schema or TypeScript union type) using
-// these lists as the single source of truth.
-
-// Three-tier permission system:
-// - "officer"    : normal member, has their own phonebook entry
-// - "admin"      : manages officers within ONE cert (see certs.adminId)
-// - "superadmin" : manages admins; there should only ever be one
 export const SYSTEM_ROLES = ["officer", "admin", "superadmin"] as const;
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
-// Status of a problem report submitted regarding an officer
-export const REPORT_STATUSES = [
-  "reported", // แจ้งปัญหาเข้ามา
-  "resolved", // แก้ไขข้อมูล/จัดการเรียบร้อยแล้ว
-  "rejected", // ปฏิเสธ (ข้อมูลถูกต้องอยู่แล้ว หรือไม่พบปัญหา)
-] as const;
+export const REPORT_STATUSES = ["reported", "resolved", "rejected"] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 
-// Choices for problem types reported (เช่น โทรไม่ติด, เบอร์โทรไม่ถูกต้อง ฯลฯ)
 export const REPORT_REASONS = [
-  "unreachable_phone", // โทรไม่ติด / ติดต่อไม่ได้
-  "wrong_phone", // เบอร์โทรศัพท์ไม่ถูกต้อง
-  "wrong_name", // ชื่อ-นามสกุลไม่ถูกต้อง
-  "wrong_cert", // สังกัด/หน่วยงานไม่ถูกต้อง
-  "wrong_role", // ตำแหน่งไม่ถูกต้อง
-  "resigned_or_moved", // ย้ายหน่วยงาน / ลาออก
-  "other", // อื่นๆ
+  "unreachable_phone",
+  "wrong_phone",
+  "wrong_name",
+  "wrong_cert",
+  "wrong_role",
+  "resigned_or_moved",
+  "other",
 ] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
@@ -63,24 +45,16 @@ export type ReportReason = (typeof REPORT_REASONS)[number];
 // 3. Core Entities
 // =========================================================================
 
-// --- Core entity: officers ------------------------------------------------
-// Every person in the system is an "officer" row, regardless of their
-// systemRole. An admin or superadmin is just an officer with a higher
-// systemRole value — they still have their own name/phone/email like
-// anyone else.
 export const officers = pgTable(
   "officers",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
-    email: varchar("email", { length: 255 }).notNull().unique(), // required, per workflow
-    avatarUrl: text("avatar_url"), // รูปโปรไฟล์ของบุคคล (URL / Path)
-
-    // Allowed values: "officer" | "admin" | "superadmin" (see SYSTEM_ROLES above)
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    avatarUrl: text("avatar_url"),
     systemRole: varchar("system_role", { length: 32 })
       .notNull()
       .default("officer"),
-
     ...timestamps,
   },
   (table) => [
@@ -89,16 +63,13 @@ export const officers = pgTable(
   ],
 );
 
-// --- One-to-many: an officer has ONE phone number ---------------------
-// (Schema still supports multiple rows per officer if that ever changes,
-// but your workflow says "one per user" — enforced via unique below.)
 export const phones = pgTable(
   "phones",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     officerId: uuid("officer_id")
       .notNull()
-      .unique() // enforces "one phone number per officer"
+      .unique()
       .references(() => officers.id, { onDelete: "cascade" }),
     phoneNumber: varchar("phone_number", { length: 32 }).notNull().unique(),
     ...timestamps,
@@ -109,22 +80,15 @@ export const phones = pgTable(
   ],
 );
 
-// --- Lookup table: the fixed list of certs (organizations/agencies) -----
 export const certs = pgTable(
   "certs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 128 }).notNull().unique(),
-    logoUrl: text("logo_url"), // รูปโลโก้/รูปของหน่วยงาน (URL / Path)
-
-    // The ONE officer (with systemRole = "admin") who manages this cert.
-    // Nullable: a cert may not have an admin assigned yet.
-    // Enforcing "one admin per cert" lives here, on the cert side, since
-    // each cert can only point to a single admin at a time.
+    logoUrl: text("logo_url"),
     adminId: uuid("admin_id").references(() => officers.id, {
       onDelete: "set null",
     }),
-
     ...timestamps,
   },
   (table) => [
@@ -133,11 +97,11 @@ export const certs = pgTable(
   ],
 );
 
-// --- Junction table: many-to-many between officers and certs ------------
-// (Officer membership in a cert — separate from who ADMINISTERS the cert.)
+// --- Junction: Membership of an Officer in a Cert -----------------------
 export const officerCerts = pgTable(
   "officer_certs",
   {
+    id: uuid("id").defaultRandom().primaryKey(), // Added primary key for easier referencing
     officerId: uuid("officer_id")
       .notNull()
       .references(() => officers.id, { onDelete: "cascade" }),
@@ -147,12 +111,15 @@ export const officerCerts = pgTable(
     ...timestamps,
   },
   (table) => [
-    primaryKey({ columns: [table.officerId, table.certId] }),
+    index("officer_certs_officer_id_cert_id_idx").on(
+      table.officerId,
+      table.certId,
+    ),
     index("officer_certs_cert_id_idx").on(table.certId),
   ],
 );
 
-// --- Lookup table: the fixed list of roles (ตำแหน่งงาน) ------------------
+// --- Lookup Table: Job Roles (ตำแหน่งงาน) --------------------------------
 export const roles = pgTable(
   "roles",
   {
@@ -163,48 +130,40 @@ export const roles = pgTable(
   (table) => [index("roles_name_idx").on(table.name)],
 );
 
-// --- Junction table: many-to-many between officers and roles ------------
-export const officerRoles = pgTable(
-  "officer_roles",
+// --- Scoped Junction: Assign Roles to an Officer WITHIN a specific Cert --
+export const officerCertRoles = pgTable(
+  "officer_cert_roles",
   {
-    officerId: uuid("officer_id")
+    officerCertId: uuid("officer_cert_id")
       .notNull()
-      .references(() => officers.id, { onDelete: "cascade" }),
+      .references(() => officerCerts.id, { onDelete: "cascade" }),
     roleId: uuid("role_id")
       .notNull()
       .references(() => roles.id, { onDelete: "cascade" }),
     ...timestamps,
   },
   (table) => [
-    primaryKey({ columns: [table.officerId, table.roleId] }),
-    index("officer_roles_role_id_idx").on(table.roleId),
+    primaryKey({ columns: [table.officerCertId, table.roleId] }),
+    index("officer_cert_roles_role_id_idx").on(table.roleId),
   ],
 );
 
 // =========================================================================
-// 4. ระบบแจ้งปัญหาข้อมูล (Data Correction Reports)
+// 4. Data Correction Reports
 // =========================================================================
 export const dataCorrectionReports = pgTable(
   "data_correction_reports",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    // เจ้าของข้อมูลที่ถูกแจ้งว่าเกิดปัญหา
     targetOfficerId: uuid("target_officer_id")
       .notNull()
       .references(() => officers.id, { onDelete: "cascade" }),
-    // ผู้ใช้ที่เป็นคนแจ้งเรื่องเข้ามา (null ได้กรณีไม่ล็อกอิน/ผู้ใช้ถูกลบ)
     reporterId: uuid("reporter_id").references(() => officers.id, {
       onDelete: "set null",
     }),
-    // หัวข้อ/ประเภทปัญหาที่เลือก (เช่น โทรไม่ติด, เบอร์โทรไม่ถูกต้อง ฯลฯ ดู REPORT_REASONS)
     reason: varchar("reason", { length: 64 }).notNull(),
-    // รายละเอียดเพิ่มเติม (Optional)
     details: text("details"),
-
-    // Allowed values: "reported" | "resolved" | "rejected" (see REPORT_STATUSES above)
     status: varchar("status", { length: 32 }).notNull().default("reported"),
-
-    // บันทึกการจัดการของ Admin
     adminNotes: text("admin_notes"),
     resolvedBy: uuid("resolved_by").references(() => officers.id, {
       onDelete: "set null",
@@ -221,7 +180,7 @@ export const dataCorrectionReports = pgTable(
 );
 
 // =========================================================================
-// 5. Relations (Drizzle Relational Queries)
+// 5. Relations
 // =========================================================================
 export const officersRelations = relations(officers, ({ one, many }) => ({
   phone: one(phones, {
@@ -229,8 +188,6 @@ export const officersRelations = relations(officers, ({ one, many }) => ({
     references: [phones.officerId],
   }),
   officerCerts: many(officerCerts),
-  officerRoles: many(officerRoles),
-  // The cert this officer administers, IF their systemRole is "admin"
   administeredCert: one(certs, {
     fields: [officers.id],
     references: [certs.adminId],
@@ -256,31 +213,39 @@ export const certsRelations = relations(certs, ({ one, many }) => ({
   officerCerts: many(officerCerts),
 }));
 
-export const officerCertsRelations = relations(officerCerts, ({ one }) => ({
-  officer: one(officers, {
-    fields: [officerCerts.officerId],
-    references: [officers.id],
+export const officerCertsRelations = relations(
+  officerCerts,
+  ({ one, many }) => ({
+    officer: one(officers, {
+      fields: [officerCerts.officerId],
+      references: [officers.id],
+    }),
+    cert: one(certs, {
+      fields: [officerCerts.certId],
+      references: [certs.id],
+    }),
+    // A single officer-cert membership can have multiple assigned roles
+    officerCertRoles: many(officerCertRoles),
   }),
-  cert: one(certs, {
-    fields: [officerCerts.certId],
-    references: [certs.id],
-  }),
-}));
+);
 
 export const rolesRelations = relations(roles, ({ many }) => ({
-  officerRoles: many(officerRoles),
+  officerCertRoles: many(officerCertRoles),
 }));
 
-export const officerRolesRelations = relations(officerRoles, ({ one }) => ({
-  officer: one(officers, {
-    fields: [officerRoles.officerId],
-    references: [officers.id],
+export const officerCertRolesRelations = relations(
+  officerCertRoles,
+  ({ one }) => ({
+    officerCert: one(officerCerts, {
+      fields: [officerCertRoles.officerCertId],
+      references: [officerCerts.id],
+    }),
+    role: one(roles, {
+      fields: [officerCertRoles.roleId],
+      references: [roles.id],
+    }),
   }),
-  role: one(roles, {
-    fields: [officerRoles.roleId],
-    references: [roles.id],
-  }),
-}));
+);
 
 export const dataCorrectionReportsRelations = relations(
   dataCorrectionReports,
@@ -301,4 +266,3 @@ export const dataCorrectionReportsRelations = relations(
     }),
   }),
 );
-

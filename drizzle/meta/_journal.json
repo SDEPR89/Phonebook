@@ -8,6 +8,13 @@
       "when": 1787037321775,
       "tag": "0000_DB_v1",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787150519757,
+      "tag": "0001_fix_role_cert_junction_table",
+      "breakpoints": true
     }
   ]
 }
