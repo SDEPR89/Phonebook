@@ -15,6 +15,13 @@
       "when": 1787150519757,
       "tag": "0001_fix_role_cert_junction_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787204672429,
+      "tag": "0002_feat_adding_auditlog",
+      "breakpoints": true
     }
   ]
 }

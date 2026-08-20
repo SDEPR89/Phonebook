@@ -12,8 +12,6 @@ export async function GET(request: NextRequest) {
 
   const term = searchTerm.trim();
   const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  // Prefix match pattern: starts with word boundary (\y) followed by user input
   const regexPattern = `\\y${escapedTerm}`;
 
   const rows = await db
