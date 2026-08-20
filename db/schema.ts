@@ -7,6 +7,8 @@ import {
   primaryKey,
   index,
   jsonb,
+  integer,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 // =========================================================================
@@ -60,6 +62,31 @@ export const officers = pgTable(
   (table) => [
     index("officers_name_idx").on(table.name),
     index("officers_email_idx").on(table.email),
+  ],
+);
+
+// --- 1-to-1 Isolated Security: Authentication Credentials ----------------
+export const officerCredentials = pgTable(
+  "officer_credentials",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    officerId: uuid("officer_id")
+      .notNull()
+      .unique()
+      .references(() => officers.id, { onDelete: "cascade" }),
+    passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+    lockedUntil: timestamp("locked_until"),
+    lastLoginAt: timestamp("last_login_at"),
+    passwordChangedAt: timestamp("password_changed_at"),
+    tokenVersion: integer("token_version").notNull().default(0),
+    requiresPasswordChange: boolean("requires_password_change")
+      .notNull()
+      .default(false),
+    ...timestamps,
+  },
+  (table) => [
+    index("officer_credentials_officer_id_idx").on(table.officerId),
   ],
 );
 
@@ -198,6 +225,10 @@ export const officersRelations = relations(officers, ({ one, many }) => ({
     fields: [officers.id],
     references: [phones.officerId],
   }),
+  credentials: one(officerCredentials, {
+    fields: [officers.id],
+    references: [officerCredentials.officerId],
+  }),
   officerCerts: many(officerCerts),
   administeredCert: one(certs, {
     fields: [officers.id],
@@ -208,6 +239,16 @@ export const officersRelations = relations(officers, ({ one, many }) => ({
   }),
   submittedReports: many(dataCorrectionReports, { relationName: "reporter" }),
 }));
+
+export const officerCredentialsRelations = relations(
+  officerCredentials,
+  ({ one }) => ({
+    officer: one(officers, {
+      fields: [officerCredentials.officerId],
+      references: [officers.id],
+    }),
+  }),
+);
 
 export const phonesRelations = relations(phones, ({ one }) => ({
   officer: one(officers, {
