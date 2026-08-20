@@ -125,7 +125,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-12 text-slate-100">
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-6 text-2xl font-bold text-slate-100">
+        <h1 className="mb-6 text-3xl font-bold text-slate-100">
           Results for <span className="text-blue-400">&quot;{term}&quot;</span>
         </h1>
 
@@ -134,49 +134,50 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             No officers found.
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {results.map((r) => (
-              <li
-                key={r.officerId}
-                className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                {r.profileUrl ? (
-                  <img
-                    src={r.profileUrl}
-                    alt={r.name}
-                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700">
-                    {r.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-1">
-                  <Link
-                    href={`/officers/${r.officerId}`}
-                    className="text-lg font-semibold text-indigo-900 transition hover:text-indigo-700 hover:underline"
-                  >
-                    {r.name}
-                  </Link>
-
-                  {r.certs.length > 0 ? (
-                    <div className="flex flex-col gap-0.5">
-                      {r.certs.map((c, idx) => (
-                        <p key={idx} className="text-sm text-slate-600">
-                          <span className="font-semibold text-slate-900">
-                            {c.certName}
-                          </span>
-                          {c.roles.length > 0
-                            ? ` — ${c.roles.join(", ")}`
-                            : ""}
-                        </p>
-                      ))}
-                    </div>
+              <li key={r.officerId}>
+                <Link
+                  href={`/officers/${r.officerId}`}
+                  className="group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:border-slate-300 hover:bg-slate-50 hover:shadow-md"
+                >
+                  {r.profileUrl ? (
+                    <img
+                      src={r.profileUrl}
+                      alt={r.name}
+                      className="h-12 w-12 shrink-0 rounded-full border border-slate-200 object-cover"
+                    />
                   ) : (
-                    <p className="text-sm text-slate-400">No Certifications</p>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-base font-semibold text-slate-700">
+                      {r.name.charAt(0).toUpperCase()}
+                    </div>
                   )}
-                </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-lg font-semibold text-indigo-900 transition-colors group-hover:text-indigo-700 group-hover:underline">
+                      {r.name}
+                    </span>
+
+                    {r.certs.length > 0 ? (
+                      <div className="flex flex-col gap-0.5">
+                        {r.certs.map((c, idx) => (
+                          <p key={idx} className="text-sm text-slate-600">
+                            <span className="font-semibold text-slate-900">
+                              {c.certName}
+                            </span>
+                            {c.roles.length > 0
+                              ? ` — ${c.roles.join(", ")}`
+                              : ""}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400">
+                        No Certifications
+                      </p>
+                    )}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
