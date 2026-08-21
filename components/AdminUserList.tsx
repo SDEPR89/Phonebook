@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminEditOfficerModal from "@/components/AdminEditOfficerModal";
 import AdminCreateOfficerModal from "@/components/AdminCreateOfficerModal";
 import type { AdminOfficerItem } from "@/app/admin/page";
@@ -95,13 +96,12 @@ export default function AdminUserList({
       </div>
 
       {/* Navigation Link: Activity History */}
-      <button
-        type="button"
-        onClick={() => router.push("/admin/history")}
+      <Link
+        href="/admin/history"
         className="fixed bottom-8 left-8 z-50 flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/90 px-4 py-3 text-xs font-semibold text-slate-300 shadow-xl backdrop-blur-md transition hover:scale-105 hover:border-slate-700 hover:bg-slate-800 hover:text-white active:scale-95 cursor-pointer"
       >
         <span>📜</span> View Activity History
-      </button>
+      </Link>
 
       {/* Action Button: Add Officer */}
       <button

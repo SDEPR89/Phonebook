@@ -23,6 +23,7 @@ export default function AdminEditOfficerModal({
   const [name, setName] = useState(officer.name || "");
   const [email, setEmail] = useState(officer.email || "");
   const [certName, setCertName] = useState(officer.certName || "");
+  const [roleName, setRoleName] = useState(officer.roleName || "");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
@@ -36,6 +37,7 @@ export default function AdminEditOfficerModal({
   const [error, setError] = useState<string | null>(null);
 
   const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   useEffect(() => {
@@ -43,10 +45,17 @@ export default function AdminEditOfficerModal({
       const fetchOptions = async () => {
         setIsLoadingOptions(true);
         try {
-          const res = await fetch("/api/certs");
-          if (res.ok) {
-            const data = await res.json();
+          const [certsRes, rolesRes] = await Promise.all([
+            fetch("/api/certs"),
+            fetch("/api/roles"),
+          ]);
+          if (certsRes.ok) {
+            const data = await certsRes.json();
             setCertOptions(data.certs || []);
+          }
+          if (rolesRes.ok) {
+            const data = await rolesRes.json();
+            setRoleOptions(data.roles || []);
           }
         } catch (err) {
           console.error("Failed to fetch certs", err);
@@ -101,6 +110,7 @@ export default function AdminEditOfficerModal({
     formData.append("name", name);
     formData.append("email", email);
     formData.append("certName", certName);
+    formData.append("roleName", roleName);
     if (avatarFile) {
       formData.append("avatar", avatarFile);
     }
@@ -121,6 +131,7 @@ export default function AdminEditOfficerModal({
           name,
           email,
           certName,
+          roleName,
           profileUrl: avatarPreview || officer.profileUrl,
         });
         onClose();
@@ -243,6 +254,19 @@ export default function AdminEditOfficerModal({
               value={certName}
               onChange={setCertName}
               placeholder="Select Cert Name"
+              disabled={isLoadingOptions}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-300">
+              Role Name
+            </label>
+            <Dropdown
+              options={roleOptions}
+              value={roleName}
+              onChange={setRoleName}
+              placeholder="Select Role Name"
               disabled={isLoadingOptions}
             />
           </div>
