@@ -24,7 +24,6 @@ export default function Header() {
       fetch("/api/certs")
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => {
-          // Handles string array or objects array like [{ name: "Cert A" }]
           const certNames = data
             .map((c: any) => (typeof c === "string" ? c : c.name || c.certName))
             .filter(Boolean);
@@ -50,7 +49,6 @@ export default function Header() {
             aria-label="Open search menu"
             className="group flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg p-2 transition-colors hover:bg-slate-100 focus:outline-none"
           >
-            {/* 3 Horizontal lines with hover animation */}
             <span className="h-0.5 w-6 rounded-full bg-slate-700 transition-all duration-300 group-hover:w-7 group-hover:bg-indigo-900" />
             <span className="h-0.5 w-6 rounded-full bg-slate-700 transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-indigo-900" />
             <span className="h-0.5 w-6 rounded-full bg-slate-700 transition-all duration-300 group-hover:w-5 group-hover:bg-indigo-900" />
@@ -98,8 +96,9 @@ export default function Header() {
 
       {/* Left Drawer Side Column */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Drawer Header */}
