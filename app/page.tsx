@@ -26,86 +26,113 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#0d0818] px-4 overflow-hidden select-none">
-      {/* CSS Keyframes for infinite idle breathing */}
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#1c182e] px-4 overflow-hidden select-none text-slate-100">
+      {/* Shared Keyframes & Animations */}
       <style>{`
         @keyframes idleBreathing {
-          0% {
-            transform: scale(0.9);
-          }
-          50% {
-            transform: scale(1.25);
-          }
-          100% {
-            transform: scale(0.9);
-          }
+          0% { transform: scale(0.9); }
+          50% { transform: scale(1.25); }
+          100% { transform: scale(0.9); }
         }
-        .animate-idle-rings {
-          animation: idleBreathing 8s ease-in-out infinite;
+        @keyframes auroraWave {
+          0% { transform: rotate(0deg) scale(1); }
+          50% { transform: rotate(180deg) scale(1.2); }
+          100% { transform: rotate(360deg) scale(1); }
         }
+        @keyframes floatGeo1 {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-30px) rotate(25deg); }
+        }
+        @keyframes floatGeo2 {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(35px) rotate(-30deg); }
+        }
+
+        .animate-idle-rings { animation: idleBreathing 8s ease-in-out infinite; }
+        .animate-aurora-1 { animation: auroraWave 30s linear infinite; }
+        .animate-aurora-2 { animation: auroraWave 40s linear infinite reverse; }
+        .animate-geo-1 { animation: floatGeo1 12s ease-in-out infinite; }
+        .animate-geo-2 { animation: floatGeo2 15s ease-in-out infinite; }
       `}</style>
 
-      {/* 1. Squeeze Parent Wrapper (Smooth transition from current breathing state) */}
+      {/* 1. Aurora Ambient Glows */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-75">
+        <div className="animate-aurora-1 absolute -left-1/4 -top-1/4 h-[45rem] w-[45rem] rounded-[40%] bg-gradient-to-tr from-indigo-500/40 via-purple-500/35 to-slate-300/20 blur-[130px]" />
+        <div className="animate-aurora-2 absolute -bottom-1/4 -right-1/4 h-[50rem] w-[50rem] rounded-[45%] bg-gradient-to-br from-violet-500/35 via-indigo-600/40 to-blue-400/25 blur-[140px]" />
+      </div>
+
+      {/* 2. Floating Glass Geometric Accents */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="animate-geo-1 absolute top-20 left-[10%] h-40 w-40 rounded-full border border-indigo-200/25 bg-gradient-to-b from-indigo-200/10 to-transparent shadow-[0_0_30px_rgba(99,102,241,0.12)]" />
+        <div className="animate-geo-2 absolute bottom-28 right-[12%] h-56 w-56 rotate-12 rounded-3xl border border-purple-200/25 bg-gradient-to-tr from-purple-200/10 via-transparent to-indigo-300/10 shadow-[0_0_40px_rgba(168,85,247,0.12)] backdrop-blur-[2px]" />
+        <div className="animate-geo-1 absolute top-1/2 left-[5%] h-24 w-24 rotate-45 rounded-lg border border-indigo-100/25 bg-indigo-200/10 shadow-[0_0_20px_rgba(199,210,254,0.15)]" />
+      </div>
+
+      {/* 3. Subtle Grid Pattern & Vignette */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div 
+          className="absolute inset-0 opacity-25"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(199, 210, 254, 0.18) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(199, 210, 254, 0.18) 1px, transparent 1px)
+            `,
+            backgroundSize: '36px 36px'
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,#1c182e_85%)]" />
+      </div>
+
+      {/* 4. Concentric Breathing Rings */}
       <div
-        className="pointer-events-none absolute inset-0 flex items-center justify-center transition-transform duration-700 ease-out"
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center transition-transform duration-700 ease-out opacity-60"
         style={{
           transform: isNearCenter ? "scale(0.62)" : "scale(1)",
         }}
       >
-        {/* Child Breathing Animation Wrapper */}
         <div className="animate-idle-rings flex items-center justify-center">
           <div
-            className="h-[1500px] w-[1500px] shrink-0 rounded-full opacity-85"
+            className="h-[1500px] w-[1500px] shrink-0 rounded-full"
             style={{
               background: `radial-gradient(
                 circle at center,
-                #dabafc 0px,
-                #bb95e1 45px,
-                #b17fe4 45px,
-                #a169d4 90px,
-                #9b57d3 90px,
-                #9150cd 140px,
-                #8e42c1 140px,
-                #8a47c4 200px,
-                #7d38b2 200px,
-                #7130a7 270px,
-                #5f1f90 270px,
-                #5d2688 350px,
-                #54257b 350px,
-                #47217f 440px,
-                #3d1378 440px,
-                #3b0764 540px,
-                #2e0c52 540px,
-                #2e1065 650px,
-                #200742 650px,
-                #1e1b4b 770px,
-                #130f33 770px,
-                transparent 900px
+                rgba(224, 231, 255, 0.8) 0px,
+                rgba(199, 210, 254, 0.7) 90px,
+                rgba(165, 180, 252, 0.6) 90px,
+                rgba(129, 140, 248, 0.5) 180px,
+                rgba(99, 102, 241, 0.4) 180px,
+                rgba(79, 70, 229, 0.35) 280px,
+                rgba(67, 56, 202, 0.3) 280px,
+                rgba(55, 48, 163, 0.25) 400px,
+                rgba(49, 46, 129, 0.2) 400px,
+                rgba(40, 34, 64, 0.15) 540px,
+                rgba(28, 24, 46, 0.1) 700px,
+                transparent 540px
               )`,
             }}
           />
         </div>
       </div>
 
-      {/* 2. Airbrush Spotlight Overlay */}
+      {/* 5. Central Airbrush Spotlight Overlay */}
       <div
         className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ease-out ${
           isNearCenter
-            ? "h-[260px] w-[260px] opacity-90 blur-md"
-            : "h-[220px] w-[220px] opacity-55 blur-2xl"
+            ? "h-[280px] w-[280px] opacity-95 blur-md"
+            : "h-[220px] w-[220px] opacity-60 blur-2xl"
         }`}
         style={{
           background:
-            "radial-gradient(circle, rgba(216, 180, 254, 0.5) 0%, rgba(168, 85, 247, 0.25) 45%, rgba(109, 40, 217, 0.1) 70%, transparent 90%)",
+            "radial-gradient(circle, rgba(199, 210, 254, 0.5) 0%, rgba(129, 140, 248, 0.3) 45%, rgba(79, 70, 229, 0.1) 70%, transparent 90%)",
           mixBlendMode: "screen",
         }}
       />
 
-      {/* 3. Foreground Content */}
+      {/* 6. Foreground Content */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-6">
         <h1
-          className={`text-3xl font-bold tracking-tight text-white drop-shadow-xl sm:text-4xl transition-transform duration-500 ease-out origin-center ${
-            isNearCenter ? "scale-125" : "scale-100"
+          className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl transition-transform duration-500 ease-out origin-center ${
+            isNearCenter ? "scale-110" : "scale-100"
           }`}
         >
           Officer Phonebook
