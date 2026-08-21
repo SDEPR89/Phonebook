@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
   officers,
@@ -7,6 +8,7 @@ import {
   certs,
   officerCertRoles,
   roles,
+  auditLogs,
 } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 
@@ -109,22 +111,36 @@ export async function PUT(request: NextRequest) {
       updatePayload.avatarUrl = avatarUrl;
     }
 
+    // For Audit Logs
+    const changes: { field: string; old: string; new: string }[] = [];
+    if (officer.name !== name.trim()) {
+      changes.push({ field: "Name", old: officer.name || "", new: name.trim() });
+    }
+    if (officer.email !== email.trim()) {
+      changes.push({ field: "Email", old: officer.email || "", new: email.trim() });
+    }
+
+    const existingPhoneResult = await db
+      .select()
+      .from(phones)
+      .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
+    
+    const existingPhoneNumber = existingPhoneResult[0]?.phoneNumber || "";
+    if (phone !== null && phone.trim() !== existingPhoneNumber) {
+      changes.push({ field: "Phone", old: existingPhoneNumber, new: phone.trim() });
+    }
+
     await db
       .update(officers)
       .set(updatePayload)
       .where(eq(officers.id, officer.id));
 
     if (phone !== null) {
-      const existingPhone = await db
-        .select()
-        .from(phones)
-        .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
-
-      if (existingPhone.length > 0) {
+      if (existingPhoneResult.length > 0) {
         await db
           .update(phones)
           .set({ phoneNumber: phone.trim(), updatedAt: new Date() })
-          .where(eq(phones.id, existingPhone[0].id));
+          .where(eq(phones.id, existingPhoneResult[0].id));
       } else if (phone.trim()) {
         await db.insert(phones).values({
           officerId: officer.id,
@@ -132,6 +148,19 @@ export async function PUT(request: NextRequest) {
         });
       }
     }
+
+    // Insert Audit Log if there are changes
+    if (changes.length > 0) {
+      await db.insert(auditLogs).values({
+        officerId: officer.id,
+        officerName: officer.name || "Unknown Officer",
+        action: "UPDATED",
+        changes: changes,
+      });
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/history");
 
     return NextResponse.json({ success: true });
   } catch (err) {

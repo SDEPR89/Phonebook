@@ -13,10 +13,12 @@ import { and, eq, isNull } from "drizzle-orm";
 
 type OfficerPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ q?: string }>;
 };
 
-export default async function OfficerDetailPage({ params }: OfficerPageProps) {
+export default async function OfficerDetailPage({ params, searchParams }: OfficerPageProps) {
   const { id } = await params;
+  const { q } = await searchParams;
 
   // 1. Query selected fields
   const rows = await db
@@ -74,7 +76,7 @@ export default async function OfficerDetailPage({ params }: OfficerPageProps) {
       <div className="mx-auto max-w-2xl space-y-6">
         {/* Navigation */}
         <Link
-          href="/"
+          href={q ? `/search?q=${encodeURIComponent(q)}` : "/"}
           className="inline-flex items-center text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline"
         >
           ← Back to Search

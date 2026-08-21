@@ -34,8 +34,6 @@ export default function UserSettingsPage() {
   // UI status states
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -113,31 +111,7 @@ export default function UserSettingsPage() {
     }
   };
 
-  const handleSoftDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const res = await fetch("/api/user/profile", { method: "DELETE" });
-      if (res.ok) {
-        router.push("/");
-        router.refresh();
-      } else {
-        const data = await res.json();
-        setStatusMessage({
-          type: "error",
-          text: data.error || "Failed to delete user.",
-        });
-      }
-    } catch (err) {
-      console.error("Soft delete error:", err);
-      setStatusMessage({
-        type: "error",
-        text: "Failed to delete user.",
-      });
-    } finally {
-      setIsDeleting(false);
-      setConfirmDelete(false);
-    }
-  };
+
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
@@ -168,7 +142,7 @@ export default function UserSettingsPage() {
         <div className="mb-4">
           <h2 className="text-xl font-bold text-slate-100">Edit User Profile</h2>
           <p className="text-xs text-slate-400">
-            Update account information or perform administrative deletion.
+            Update account information.
           </p>
         </div>
 
@@ -323,36 +297,7 @@ export default function UserSettingsPage() {
             </div>
           </div>
 
-          {/* Actions & Delete Confirmation */}
-          <div className="mt-6 flex items-center justify-between border-t border-slate-800/80 pt-4">
-            {confirmDelete ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-red-400 font-semibold">Confirm Delete?</span>
-                <button
-                  type="button"
-                  onClick={handleSoftDelete}
-                  disabled={isDeleting}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500"
-                >
-                  {isDeleting ? "Deleting..." : "Yes, Delete"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="rounded-lg border border-slate-800 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
-              >
-                Delete User
-              </button>
-            )}
+          <div className="mt-6 flex items-center justify-end border-t border-slate-800/80 pt-4">
 
             <div className="flex items-center gap-3">
               <Link

@@ -138,7 +138,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {results.map((r) => (
               <li key={r.officerId}>
                 <Link
-                  href={`/officers/${r.officerId}`}
+                  href={`/officers/${r.officerId}${term ? `?q=${encodeURIComponent(term)}` : ""}`}
                   className="group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:border-slate-300 hover:bg-slate-50 hover:shadow-md"
                 >
                   {r.profileUrl ? (

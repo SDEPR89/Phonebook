@@ -30,9 +30,42 @@ export default function AdminEditOfficerModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/officers/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ officerId: officer.officerId }),
+      });
+
+      if (res.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      setError(data.error || `Failed to delete officer (${res.status})`);
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred while deleting.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -189,21 +222,57 @@ export default function AdminEditOfficerModal({
             />
           </div>
 
-          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-800 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
+          <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
+            <div>
+              {showConfirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-400">Are you sure?</span>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting || isSaving}
+                    className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                  >
+                    {isDeleting ? "..." : "Yes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmDelete(false)}
+                    disabled={isDeleting || isSaving}
+                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmDelete(true)}
+                  disabled={isDeleting || isSaving}
+                  className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting || isSaving}
+                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

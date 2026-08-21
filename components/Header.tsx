@@ -74,14 +74,17 @@ export default function Header() {
         {/* Right side: Search Bar & User Profile Avatar */}
         <div className="flex items-center gap-4">
           {!isHomePage && <SearchBar />}
-          <button className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+          <Link
+            href="/setting"
+            className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
             <Image
               src="/avatar.png"
               alt="User Avatar"
               fill
               className="object-cover"
             />
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -95,9 +98,8 @@ export default function Header() {
 
       {/* Left Drawer Side Column */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
-          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 bottom-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Drawer Header */}
