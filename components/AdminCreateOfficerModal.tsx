@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
+import { useState, useRef, FormEvent, useEffect } from "react";
+import Dropdown from "./Dropdown";
 
 type CreateOfficerModalProps = {
   isOpen: boolean;
@@ -26,6 +27,37 @@ export default function AdminCreateOfficerModal({
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchOptions = async () => {
+        setIsLoadingOptions(true);
+        try {
+          const [certsRes, rolesRes] = await Promise.all([
+            fetch("/api/certs"),
+            fetch("/api/roles"),
+          ]);
+          if (certsRes.ok) {
+            const data = await certsRes.json();
+            setCertOptions(data.certs || []);
+          }
+          if (rolesRes.ok) {
+            const data = await rolesRes.json();
+            setRoleOptions(data.roles || []);
+          }
+        } catch (err) {
+          console.error("Failed to fetch options", err);
+        } finally {
+          setIsLoadingOptions(false);
+        }
+      };
+      fetchOptions();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -206,24 +238,24 @@ export default function AdminCreateOfficerModal({
               <label className="mb-1 block text-xs font-semibold text-slate-300">
                 Cert Name
               </label>
-              <input
-                type="text"
+              <Dropdown
+                options={certOptions}
                 value={cert}
-                onChange={(e) => setCert(e.target.value)}
+                onChange={setCert}
                 placeholder="e.g. ThaiCERT"
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm outline-none focus:border-blue-500"
+                disabled={isLoadingOptions}
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
                 Role Name
               </label>
-              <input
-                type="text"
+              <Dropdown
+                options={roleOptions}
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={setRole}
                 placeholder="e.g. Analyst"
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm outline-none focus:border-blue-500"
+                disabled={isLoadingOptions}
               />
             </div>
           </div>

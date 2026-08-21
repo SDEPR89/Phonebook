@@ -7,6 +7,7 @@ export type AdminOfficerItem = {
   name: string;
   email: string;
   certName?: string;
+  roleName?: string;
   profileUrl?: string;
 };
 
@@ -24,6 +25,11 @@ export default async function AdminPage() {
         officerCerts: {
           with: {
             cert: true,
+            officerCertRoles: {
+              with: {
+                role: true,
+              },
+            },
           },
         },
       },
@@ -34,6 +40,7 @@ export default async function AdminPage() {
       name: officer.name,
       email: officer.email,
       certName: officer.officerCerts[0]?.cert?.name || undefined,
+      roleName: officer.officerCerts[0]?.officerCertRoles[0]?.role?.name || undefined,
       profileUrl: officer.avatarUrl || undefined,
     }));
   } catch (err) {

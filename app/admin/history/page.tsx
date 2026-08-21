@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { auditLogs } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 
 type AuditChange = {
@@ -11,10 +11,22 @@ type AuditChange = {
 
 export const revalidate = 0; // Disable static caching so new updates appear immediately
 
-export default async function AdminHistoryPage() {
+export default async function AdminHistoryPage({
+  searchParams,
+}: {
+  searchParams?: any;
+}) {
+  const params = await searchParams;
+  const filter = params?.filter as string | undefined;
+
   const logs = await db
     .select()
     .from(auditLogs)
+    .where(
+      filter && ["CREATED", "UPDATED", "DELETED"].includes(filter)
+        ? eq(auditLogs.action, filter)
+        : undefined
+    )
     .orderBy(desc(auditLogs.createdAt));
 
   return (
@@ -35,6 +47,50 @@ export default async function AdminHistoryPage() {
           <span className="rounded-full border border-blue-800/60 bg-blue-950/40 px-3 py-1 text-xs font-semibold text-blue-400">
             {logs.length} Logged Events
           </span>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/history"
+            className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${
+              !filter
+                ? "bg-slate-700 text-white border-slate-600"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-300"
+            }`}
+          >
+            All
+          </Link>
+          <Link
+            href="/admin/history?filter=CREATED"
+            className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${
+              filter === "CREATED"
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20"
+            }`}
+          >
+            CREATED
+          </Link>
+          <Link
+            href="/admin/history?filter=UPDATED"
+            className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${
+              filter === "UPDATED"
+                ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/20"
+            }`}
+          >
+            UPDATED
+          </Link>
+          <Link
+            href="/admin/history?filter=DELETED"
+            className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${
+              filter === "DELETED"
+                ? "bg-red-500/20 text-red-400 border-red-500/30"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20"
+            }`}
+          >
+            DELETED
+          </Link>
         </div>
 
         {/* Logs Feed */}

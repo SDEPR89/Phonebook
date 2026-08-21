@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { officers, officerCerts, certs, auditLogs } from "@/db/schema";
+import { officers, officerCerts, certs, roles, officerCertRoles, auditLogs } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
 
 export async function POST(req: Request) {
@@ -9,9 +9,11 @@ export async function POST(req: Request) {
     const formData = await req.formData();
 
     const officerId = (formData.get("officerId") as string) || "";
-    const name = (formData.get("name") as string) || "";
+    const rawName = (formData.get("name") as string) || "";
+    const name = rawName.toUpperCase();
     const email = (formData.get("email") as string) || "";
     const certName = (formData.get("certName") as string) || "";
+    const roleName = (formData.get("roleName") as string) || "";
     const avatarFile = formData.get("avatar") as File | null;
 
     if (!officerId || !name || !email) {
@@ -45,19 +47,25 @@ export async function POST(req: Request) {
 
     const currentOfficer = existingOfficer[0];
 
-    // 2. Fetch linked cert
-    const currentCertLink = await db
+    // 2. Fetch linked cert and role
+    const currentCertRoleLink = await db
       .select({
         certId: certs.id,
         certName: certs.name,
         junctionId: officerCerts.id,
+        roleName: roles.name,
+        roleJunctionId: officerCertRoles.roleId, // just checking if it exists
       })
       .from(officerCerts)
       .innerJoin(certs, eq(certs.id, officerCerts.certId))
+      .leftJoin(officerCertRoles, eq(officerCertRoles.officerCertId, officerCerts.id))
+      .leftJoin(roles, eq(roles.id, officerCertRoles.roleId))
       .where(eq(officerCerts.officerId, officerId))
       .limit(1);
 
-    const oldCertName = currentCertLink[0]?.certName || "None";
+    const oldCertName = currentCertRoleLink[0]?.certName || "None";
+    const oldRoleName = currentCertRoleLink[0]?.roleName || "None";
+    let junctionId = currentCertRoleLink[0]?.junctionId;
 
     // 3. Track Changes
     const changes: Array<{ field: string; old: string; new: string }> = [];
@@ -85,6 +93,9 @@ export async function POST(req: Request) {
     }
     if (certName && oldCertName !== certName) {
       changes.push({ field: "Cert Name", old: oldCertName, new: certName });
+    }
+    if (roleName && oldRoleName !== roleName) {
+      changes.push({ field: "Role Name", old: oldRoleName, new: roleName });
     }
 
     // 4. Update Officer Record (including avatarUrl if new photo provided)
@@ -119,16 +130,48 @@ export async function POST(req: Request) {
         targetCertId = newCert.id;
       }
 
-      if (currentCertLink[0]?.junctionId) {
+      if (junctionId) {
         await db
           .update(officerCerts)
           .set({ certId: targetCertId, updatedAt: new Date() })
-          .where(eq(officerCerts.id, currentCertLink[0].junctionId));
+          .where(eq(officerCerts.id, junctionId));
       } else {
-        await db
+        const [newOfficerCert] = await db
           .insert(officerCerts)
-          .values({ officerId, certId: targetCertId });
+          .values({ officerId, certId: targetCertId })
+          .returning({ id: officerCerts.id });
+        junctionId = newOfficerCert.id;
       }
+    }
+
+    // 5.5 Update Role Link
+    if (roleName && oldRoleName !== roleName && junctionId) {
+      const existingRole = await db
+        .select({ id: roles.id })
+        .from(roles)
+        .where(ilike(roles.name, roleName))
+        .limit(1);
+
+      let targetRoleId: string;
+
+      if (existingRole.length > 0) {
+        targetRoleId = existingRole[0].id;
+      } else {
+        const [newRole] = await db
+          .insert(roles)
+          .values({ name: roleName })
+          .returning({ id: roles.id });
+        targetRoleId = newRole.id;
+      }
+
+      // We only support 1 role per cert. So we delete existing roles for this junctionId
+      await db
+        .delete(officerCertRoles)
+        .where(eq(officerCertRoles.officerCertId, junctionId));
+      
+      await db
+        .insert(officerCertRoles)
+        .values({ officerCertId: junctionId, roleId: targetRoleId });
     }
 
     // 6. Record Audit Log

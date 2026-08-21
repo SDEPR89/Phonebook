@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const name = formData.get("name") as string;
+    const rawName = formData.get("name") as string;
+    const name = rawName ? rawName.toUpperCase() : "";
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
     const certName = formData.get("cert") as string;
