@@ -24,8 +24,8 @@ export default function Header() {
       fetch("/api/certs")
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => {
-          // Handles string array or objects array like [{ name: "Cert A" }]
-          const certNames = data
+          const list = Array.isArray(data) ? data : (data.certs || []);
+          const certNames = list
             .map((c: any) => (typeof c === "string" ? c : c.name || c.certName))
             .filter(Boolean);
           setCertList(certNames);

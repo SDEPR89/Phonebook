@@ -9,7 +9,8 @@ export async function POST(req: Request) {
     const formData = await req.formData();
 
     const officerId = (formData.get("officerId") as string) || "";
-    const name = (formData.get("name") as string) || "";
+    const rawName = (formData.get("name") as string) || "";
+    const name = rawName.toUpperCase();
     const email = (formData.get("email") as string) || "";
     const certName = (formData.get("certName") as string) || "";
     const roleName = (formData.get("roleName") as string) || "";
