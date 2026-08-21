@@ -22,6 +22,13 @@
       "when": 1787204672429,
       "tag": "0002_feat_adding_auditlog",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787302530968,
+      "tag": "0003_feat_adding_loginCredentials",
+      "breakpoints": true
     }
   ]
 }
