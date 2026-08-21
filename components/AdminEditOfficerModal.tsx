@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent, startTransition } from "react";
+import { useState, useRef, FormEvent, startTransition, useEffect } from "react";
+import Dropdown from "./Dropdown";
 import { useRouter } from "next/navigation";
 import type { AdminOfficerItem } from "@/app/admin/page";
 
@@ -33,6 +34,29 @@ export default function AdminEditOfficerModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchOptions = async () => {
+        setIsLoadingOptions(true);
+        try {
+          const res = await fetch("/api/certs");
+          if (res.ok) {
+            const data = await res.json();
+            setCertOptions(data.certs || []);
+          }
+        } catch (err) {
+          console.error("Failed to fetch certs", err);
+        } finally {
+          setIsLoadingOptions(false);
+        }
+      };
+      fetchOptions();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -214,11 +238,12 @@ export default function AdminEditOfficerModal({
             <label className="mb-1 block text-xs font-semibold text-slate-300">
               Cert Name
             </label>
-            <input
-              type="text"
+            <Dropdown
+              options={certOptions}
               value={certName}
-              onChange={(e) => setCertName(e.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              onChange={setCertName}
+              placeholder="Select Cert Name"
+              disabled={isLoadingOptions}
             />
           </div>
 
