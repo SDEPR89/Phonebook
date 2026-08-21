@@ -3,23 +3,39 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate authentication process
-    console.log("Logging in with:", { email, password });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password }),
+      });
 
-    setTimeout(() => {
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        router.push("/");
+      } else {
+        alert(data.error || "Login failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred during login");
+    } finally {
       setLoading(false);
-      alert("Login request submitted!");
-    }, 1000);
+    }
   };
 
   return (
