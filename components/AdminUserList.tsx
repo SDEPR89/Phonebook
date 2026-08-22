@@ -9,10 +9,27 @@ import type { AdminOfficerItem } from "@/app/admin/page";
 
 interface AdminUserListProps {
   initialUsers?: AdminOfficerItem[];
+  viewerRole?: string;
 }
+
+const ROLE_LABELS: Record<string, { label: string; color: string }> = {
+  officer: {
+    label: "Officer",
+    color: "bg-indigo-950/60 text-indigo-400 border-indigo-800/40",
+  },
+  admin: {
+    label: "Admin",
+    color: "bg-purple-950/60 text-purple-400 border-purple-800/40",
+  },
+  superadmin: {
+    label: "Superadmin",
+    color: "bg-amber-950/60 text-amber-400 border-amber-800/40",
+  },
+};
 
 export default function AdminUserList({
   initialUsers = [],
+  viewerRole = "admin",
 }: AdminUserListProps) {
   const router = useRouter();
 
@@ -20,6 +37,7 @@ export default function AdminUserList({
     useState<AdminOfficerItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
 
   const handleEdit = (officer: AdminOfficerItem) => {
     setSelectedOfficer(officer);
@@ -34,64 +52,112 @@ export default function AdminUserList({
     router.refresh();
   };
 
+  // Available filter tabs: superadmin sees all three, admin sees officer+admin
+  const filterTabs =
+    viewerRole === "superadmin"
+      ? ["all", "officer", "admin", "superadmin"]
+      : ["all", "officer", "admin"];
+
+  const filteredUsers =
+    roleFilter === "all"
+      ? initialUsers
+      : initialUsers.filter((u) => u.systemRole === roleFilter);
+
   return (
     <>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100">Admin — All Users</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-100">
+          {viewerRole === "superadmin" ? "Superadmin — All Users" : "Admin — Users"}
+        </h1>
         <span className="rounded-full border border-blue-800/60 bg-blue-950/40 px-3 py-1 text-xs font-semibold text-blue-400">
-          {initialUsers.length} Records
+          {filteredUsers.length} Records
         </span>
+      </div>
+
+      {/* Role Filter Pills — shown to both admin and superadmin */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {filterTabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setRoleFilter(tab)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize transition ${
+              roleFilter === tab
+                ? tab === "all"
+                  ? "bg-slate-700 text-white border-slate-600"
+                  : tab === "officer"
+                  ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+                  : tab === "admin"
+                  ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
+                  : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-300"
+            }`}
+          >
+            {tab === "all" ? "All Roles" : tab}
+          </button>
+        ))}
       </div>
 
       {/* Card List UI */}
       <div className="space-y-3 pb-20">
-        {initialUsers.length === 0 ? (
+        {filteredUsers.length === 0 ? (
           <div className="rounded-2xl border border-slate-800 bg-[#0D121F] p-8 text-center text-slate-400">
-            No officer records found.
+            No records found.
           </div>
         ) : (
-          initialUsers.map((officer) => (
-            <div
-              key={officer.officerId}
-              className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-[#0D121F] p-4 transition hover:border-slate-700"
-            >
-              <div className="flex items-center gap-3">
-                {officer.profileUrl ? (
-                  <img
-                    src={officer.profileUrl}
-                    alt={officer.name}
-                    className="h-10 w-10 rounded-full border border-slate-700 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-sm font-semibold text-slate-300">
-                    {officer.name ? officer.name.charAt(0) : "U"}
-                  </div>
-                )}
+          filteredUsers.map((officer) => {
+            const roleInfo =
+              ROLE_LABELS[officer.systemRole] || ROLE_LABELS.officer;
+            return (
+              <div
+                key={officer.officerId}
+                className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-[#0D121F] p-4 transition hover:border-slate-700"
+              >
+                <div className="flex items-center gap-3">
+                  {officer.profileUrl ? (
+                    <img
+                      src={officer.profileUrl}
+                      alt={officer.name}
+                      className="h-10 w-10 rounded-full border border-slate-700 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-sm font-semibold text-slate-300">
+                      {officer.name ? officer.name.charAt(0) : "U"}
+                    </div>
+                  )}
 
-                <div>
-                  <h3 className="font-semibold text-slate-100">
-                    {officer.name}
-                  </h3>
-                  <p className="text-xs text-slate-400">{officer.email}</p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-slate-100">
+                        {officer.name}
+                      </h3>
+                      {/* systemRole badge */}
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${roleInfo.color}`}
+                      >
+                        {roleInfo.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">{officer.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className="rounded-xl border border-blue-800/40 bg-blue-950/60 px-3 py-1 text-xs font-medium text-blue-400">
+                    {officer.certName || "No Cert"}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(officer)}
+                    className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <span className="rounded-xl border border-blue-800/40 bg-blue-950/60 px-3 py-1 text-xs font-medium text-blue-400">
-                  {officer.certName || "No Cert"}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => handleEdit(officer)}
-                  className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                >
-                  Edit
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

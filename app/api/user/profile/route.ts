@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
+import { getSession } from "@/app/lib/auth";
 import {
   officers,
   phones,
@@ -15,11 +16,24 @@ import { eq, and, isNull } from "drizzle-orm";
 // GET profile with created_at & updated_at timestamps
 export async function GET() {
   try {
-    const [officer] = await db
-      .select()
-      .from(officers)
-      .where(isNull(officers.deletedAt))
-      .limit(1);
+    const session = await getSession();
+    let officer;
+
+    if (session?.userId) {
+      [officer] = await db
+        .select()
+        .from(officers)
+        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+        .limit(1);
+    }
+
+    if (!officer) {
+      [officer] = await db
+        .select()
+        .from(officers)
+        .where(isNull(officers.deletedAt))
+        .limit(1);
+    }
 
     if (!officer) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -68,11 +82,24 @@ export async function GET() {
 // PUT endpoint to update details
 export async function PUT(request: NextRequest) {
   try {
-    const [officer] = await db
-      .select()
-      .from(officers)
-      .where(isNull(officers.deletedAt))
-      .limit(1);
+    const session = await getSession();
+    let officer;
+
+    if (session?.userId) {
+      [officer] = await db
+        .select()
+        .from(officers)
+        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+        .limit(1);
+    }
+
+    if (!officer) {
+      [officer] = await db
+        .select()
+        .from(officers)
+        .where(isNull(officers.deletedAt))
+        .limit(1);
+    }
 
     if (!officer) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
