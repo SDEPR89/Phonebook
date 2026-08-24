@@ -135,7 +135,7 @@ export default function HomePage() {
             isNearCenter ? "scale-110" : "scale-100"
           }`}
         >
-          Officer Phonebook
+          CERT Community Phonebook
         </h1>
 
         <SearchBar />

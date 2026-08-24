@@ -64,7 +64,7 @@ export default function Header() {
               priority
             />
             <span className="text-3xl font-semibold text-gray-900 tracking-tight">
-              ThaiCERT Phonebook
+              CERT Community Phonebook
             </span>
           </Link>
         </div>
