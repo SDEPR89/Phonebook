@@ -120,7 +120,7 @@ export default function Header() {
 
         {/* Right side: Search Bar & User Profile Avatar */}
         <div className="flex items-center gap-4">
-          {!isHomePage || !isLoginPage && (
+          {(!isHomePage && !isLoginPage) && (
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>
