@@ -35,6 +35,7 @@ export default function AdminEditOfficerModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
   const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
@@ -72,6 +73,7 @@ export default function AdminEditOfficerModal({
   const handleDelete = async () => {
     setIsDeleting(true);
     setError(null);
+    setInfoMessage(null);
 
     try {
       const res = await fetch("/api/officers/delete", {
@@ -102,8 +104,23 @@ export default function AdminEditOfficerModal({
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Check if any fields changed
+    const isUnchanged =
+      name.trim() === (officer.name || "").trim() &&
+      email.trim() === (officer.email || "").trim() &&
+      certName.trim() === (officer.certName || "").trim() &&
+      roleName.trim() === (officer.roleName || "").trim() &&
+      !avatarFile;
+
+    if (isUnchanged) {
+      setInfoMessage("Nothing changed.");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
+    setInfoMessage(null);
 
     const formData = new FormData();
     formData.append("officerId", officer.officerId);
@@ -166,6 +183,12 @@ export default function AdminEditOfficerModal({
             Update user information or remove officer profile.
           </p>
         </div>
+
+        {infoMessage && (
+          <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
+            {infoMessage}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400">

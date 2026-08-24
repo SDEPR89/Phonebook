@@ -185,11 +185,22 @@ export async function POST(req: Request) {
 
     // 6. Record Audit Log
     if (changes.length > 0) {
+      const [actor] = await db
+        .select()
+        .from(officers)
+        .where(eq(officers.id, session.userId))
+        .limit(1);
+
+      const actorName = actor?.name || "Admin";
+
       await db.insert(auditLogs).values({
-        officerId,
-        officerName: name,
+        officerId: session.userId,
+        officerName: actorName,
         action: "UPDATED",
-        changes,
+        changes: [
+          { field: "Target Officer", old: "", new: name },
+          ...changes,
+        ],
       });
     }
 

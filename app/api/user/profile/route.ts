@@ -10,32 +10,40 @@ import {
   officerCertRoles,
   roles,
   auditLogs,
+  loginCredentials,
 } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
+import crypto from "crypto";
 
 // GET profile with created_at & updated_at timestamps
 export async function GET() {
   try {
     const session = await getSession();
-    let officer;
-
-    if (session?.userId) {
-      [officer] = await db
-        .select()
-        .from(officers)
-        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
-        .limit(1);
+    if (!session?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!officer) {
-      [officer] = await db
-        .select()
-        .from(officers)
-        .where(isNull(officers.deletedAt))
-        .limit(1);
-    }
+    const [officer] = await db
+      .select()
+      .from(officers)
+      .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+      .limit(1);
 
     if (!officer) {
+      if (session.role === "admin" || session.role === "superadmin") {
+        return NextResponse.json({
+          id: session.userId,
+          name: session.role === "superadmin" ? "SUPERADMIN" : "SYSTEM ADMINISTRATOR",
+          email: "admin@thaicert.or.th",
+          phone: "",
+          avatarUrl: "/unlogin-avatar.svg",
+          systemRole: session.role,
+          certName: "ThaiCERT",
+          roles: [session.role === "superadmin" ? "Super Admin" : "Admin"],
+          createdAt: null,
+          updatedAt: null,
+        });
+      }
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -67,7 +75,8 @@ export async function GET() {
       name: officer.name ?? "",
       email: officer.email ?? "",
       phone: phoneRecord?.phoneNumber ?? "",
-      avatarUrl: officer.avatarUrl ?? null,
+      avatarUrl: officer.avatarUrl || "/unlogin-avatar.svg",
+      systemRole: officer.systemRole ?? session?.role ?? "officer",
       certName,
       roles: userRoles,
       createdAt: officer.createdAt,
@@ -83,23 +92,15 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getSession();
-    let officer;
-
-    if (session?.userId) {
-      [officer] = await db
-        .select()
-        .from(officers)
-        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
-        .limit(1);
+    if (!session?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!officer) {
-      [officer] = await db
-        .select()
-        .from(officers)
-        .where(isNull(officers.deletedAt))
-        .limit(1);
-    }
+    const [officer] = await db
+      .select()
+      .from(officers)
+      .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+      .limit(1);
 
     if (!officer) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -176,14 +177,93 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const newPassword = formData.get("newPassword") as string;
+    if (newPassword && newPassword.trim()) {
+      const salt = crypto.randomBytes(16).toString("hex");
+      const passwordHash = crypto.pbkdf2Sync(
+        newPassword.trim(),
+        salt,
+        1000,
+        64,
+        "sha512"
+      ).toString("hex");
+
+      const [existingCred] = await db
+        .select()
+        .from(loginCredentials)
+        .where(eq(loginCredentials.officerId, officer.id))
+        .limit(1);
+
+      if (existingCred) {
+        await db
+          .update(loginCredentials)
+          .set({
+            passwordHash,
+            salt,
+            username: email.trim(),
+            updatedAt: new Date(),
+          })
+          .where(eq(loginCredentials.id, existingCred.id));
+      } else {
+        await db.insert(loginCredentials).values({
+          officerId: officer.id,
+          username: email.trim(),
+          passwordHash,
+          salt,
+        });
+      }
+
+      // Audit log formatting: first time password change shows Initial Password -> ••••••••, subsequent changes show •••••••• -> ••••••••
+      const allLogs = await db.select().from(auditLogs);
+      let initialPass = "";
+      let hasUpdatedPassBefore = false;
+
+      for (const log of allLogs) {
+        let changesArr: any[] = [];
+        if (Array.isArray(log.changes)) changesArr = log.changes;
+        else if (typeof log.changes === "string") {
+          try {
+            changesArr = JSON.parse(log.changes);
+          } catch {}
+        }
+
+        const isMatch =
+          log.officerId === officer.id ||
+          log.officerName === officer.name ||
+          changesArr.some(
+            (c) => c.new === officer.name || c.new === officer.email
+          );
+
+        if (isMatch) {
+          for (const c of changesArr) {
+            if (c.field === "Password") {
+              hasUpdatedPassBefore = true;
+            }
+            if (c.field === "Initial Password" && c.new) {
+              initialPass = c.new;
+            }
+          }
+        }
+      }
+
+      const oldPassDisplay =
+        !hasUpdatedPassBefore && initialPass ? initialPass : "••••••••";
+
+      changes.push({ field: "Password", old: oldPassDisplay, new: "••••••••" });
+    }
+
     // Insert Audit Log if there are changes
     if (changes.length > 0) {
       await db.insert(auditLogs).values({
-        officerId: officer.id,
+        officerId: session.userId,
         officerName: officer.name || "Unknown Officer",
         action: "UPDATED",
         changes: changes,
       });
+    }
+
+    if (changes.length === 0 && avatarUrl === undefined) {
+      return NextResponse.json({ success: true, unchanged: true, message: "Nothing changed." });
     }
 
     revalidatePath("/admin");
@@ -199,10 +279,15 @@ export async function PUT(request: NextRequest) {
 // DELETE endpoint for Soft Delete
 export async function DELETE() {
   try {
+    const session = await getSession();
+    if (!session?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const [officer] = await db
       .select()
       .from(officers)
-      .where(isNull(officers.deletedAt))
+      .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
       .limit(1);
 
     if (!officer) {

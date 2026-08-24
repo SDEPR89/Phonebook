@@ -44,11 +44,8 @@ export default async function AdminPage() {
       },
     });
 
-    // superadmin sees everyone, admin sees officers + admins (not superadmins)
-    const allowedRoles =
-      viewerRole === "superadmin"
-        ? ["officer", "admin", "superadmin"]
-        : ["officer", "admin"];
+    // Both admin and superadmin can view all accounts (officer, admin, superadmin)
+    const allowedRoles = ["officer", "admin", "superadmin"];
 
     initialOfficers = dbOfficers
       .filter((o) => allowedRoles.includes(o.systemRole ?? "officer"))
@@ -61,7 +58,7 @@ export default async function AdminPage() {
         roleName:
           officer.officerCerts[0]?.officerCertRoles[0]?.role?.name ||
           undefined,
-        profileUrl: officer.avatarUrl || undefined,
+        profileUrl: officer.avatarUrl || "/unlogin-avatar.svg",
       }));
   } catch (err) {
     console.error("Failed to fetch officers:", err);

@@ -41,16 +41,30 @@ export async function DELETE(req: Request) {
     const officer = existingOfficer[0];
 
     // 2. Insert DELETED record into Audit Logs
+    const [actor] = await db
+      .select()
+      .from(officers)
+      .where(eq(officers.id, session.userId))
+      .limit(1);
+
+    const actorName = actor?.name || "Admin";
+
+    const deletedName = officer.name || "Unknown Officer";
+    const deletedEmail = officer.email || "";
+
     await db.insert(auditLogs).values({
-      officerId: officer.id,
-      officerName: officer.name || "Unknown Officer",
+      officerId: session.userId,
+      officerName: actorName,
       action: "DELETED",
       changes: [
         {
-          field: "Status",
-          old: "Active",
-          new: "Deleted",
+          field: "Deleted Officer",
+          old: deletedName,
+          new: "Removed",
         },
+        ...(deletedEmail
+          ? [{ field: "Email", old: deletedEmail, new: "Removed" }]
+          : []),
       ],
     });
 

@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     color: "bg-purple-950/60 text-purple-400 border-purple-800/40",
   },
   superadmin: {
-    label: "Superadmin",
+    label: "Super Admin",
     color: "bg-amber-950/60 text-amber-400 border-amber-800/40",
   },
 };
@@ -52,11 +52,8 @@ export default function AdminUserList({
     router.refresh();
   };
 
-  // Available filter tabs: superadmin sees all three, admin sees officer+admin
-  const filterTabs =
-    viewerRole === "superadmin"
-      ? ["all", "officer", "admin", "superadmin"]
-      : ["all", "officer", "admin"];
+  // Available filter tabs for all admin users
+  const filterTabs = ["all", "officer", "admin", "superadmin"];
 
   const filteredUsers =
     roleFilter === "all"
@@ -68,7 +65,7 @@ export default function AdminUserList({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-100">
-          {viewerRole === "superadmin" ? "Superadmin — All Users" : "Admin — Users"}
+          Admin — All Users
         </h1>
         <span className="rounded-full border border-blue-800/60 bg-blue-950/40 px-3 py-1 text-xs font-semibold text-blue-400">
           {filteredUsers.length} Records
@@ -93,7 +90,11 @@ export default function AdminUserList({
                 : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-300"
             }`}
           >
-            {tab === "all" ? "All Roles" : tab}
+            {tab === "all"
+              ? "All Roles"
+              : tab === "superadmin"
+              ? "Super Admin"
+              : tab}
           </button>
         ))}
       </div>
@@ -114,17 +115,11 @@ export default function AdminUserList({
                 className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-[#0D121F] p-4 transition hover:border-slate-700"
               >
                 <div className="flex items-center gap-3">
-                  {officer.profileUrl ? (
-                    <img
-                      src={officer.profileUrl}
-                      alt={officer.name}
-                      className="h-10 w-10 rounded-full border border-slate-700 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-sm font-semibold text-slate-300">
-                      {officer.name ? officer.name.charAt(0) : "U"}
-                    </div>
-                  )}
+                  <img
+                    src={officer.profileUrl || "/unlogin-avatar.svg"}
+                    alt={officer.name}
+                    className="h-10 w-10 rounded-full border border-slate-700 object-cover"
+                  />
 
                   <div>
                     <div className="flex items-center gap-2">

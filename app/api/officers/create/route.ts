@@ -10,8 +10,10 @@ import {
   roles,
   officerCertRoles,
   auditLogs,
+  loginCredentials,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +33,7 @@ export async function POST(request: NextRequest) {
     const phone = formData.get("phone") as string;
     const certName = formData.get("cert") as string;
     const roleName = formData.get("role") as string;
+    const password = formData.get("password") as string;
 
     if (!name || !email) {
       return NextResponse.json(
@@ -57,6 +60,25 @@ export async function POST(request: NextRequest) {
         avatarUrl,
       })
       .returning();
+
+    // 1.5 Insert Login Credentials
+    if (password && password.trim()) {
+      const salt = crypto.randomBytes(16).toString("hex");
+      const passwordHash = crypto.pbkdf2Sync(
+        password.trim(),
+        salt,
+        1000,
+        64,
+        "sha512"
+      ).toString("hex");
+
+      await db.insert(loginCredentials).values({
+        officerId: newOfficer.id,
+        username: email.trim(),
+        passwordHash,
+        salt,
+      });
+    }
 
     // 2. Insert Phone
     if (phone && phone.trim()) {
@@ -109,16 +131,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Insert CREATED Audit Log
+    const [actor] = await db
+      .select()
+      .from(officers)
+      .where(eq(officers.id, session.userId))
+      .limit(1);
+
+    const actorName = actor?.name || "Admin";
+
     const changesArray = [
+      { field: "Created Profile", old: "", new: name },
       { field: "Email", old: "", new: email },
       ...(phone ? [{ field: "Phone", old: "", new: phone.trim() }] : []),
       ...(certName ? [{ field: "Cert", old: "", new: certName.trim() }] : []),
       ...(roleName ? [{ field: "Role", old: "", new: roleName.trim() }] : []),
+      ...(password && password.trim()
+        ? [{ field: "Initial Password", old: "", new: password.trim() }]
+        : []),
     ];
 
     await db.insert(auditLogs).values({
-      officerId: newOfficer.id,
-      officerName: newOfficer.name,
+      officerId: session.userId,
+      officerName: actorName,
       action: "CREATED",
       changes: changesArray,
     });
