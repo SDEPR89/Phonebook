@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "./SearchBar";
@@ -13,6 +13,37 @@ export default function Header() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [certList, setCertList] = useState<string[]>([]);
   const [loadingCerts, setLoadingCerts] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>("/avatar.png");
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Fetch current user's profile picture
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.avatarUrl) {
+          setAvatarUrl(data.avatarUrl);
+        }
+      })
+      .catch((err) => console.error("Failed to load user avatar:", err));
+  }, []);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
 
   // Hide search bar ONLY on the root home page ("/")
   const isHomePage = pathname === "/";
@@ -71,18 +102,53 @@ export default function Header() {
 
         {/* Right side: Search Bar & User Profile Avatar */}
         <div className="flex items-center gap-4">
-          {!isHomePage && <SearchBar />}
-          <Link
-            href="/setting"
-            className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            <Image
-              src="/avatar.png"
-              alt="User Avatar"
-              fill
-              className="object-cover"
-            />
-          </Link>
+          {!isHomePage && (
+            <Suspense fallback={null}>
+              <SearchBar />
+            </Suspense>
+          )}
+          {/* Avatar dropdown */}
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              onClick={() => setIsProfileMenuOpen((v) => !v)}
+              className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              <Image
+                src={avatarUrl}
+                alt="User Avatar"
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            </button>
+
+            {/* Dropdown menu */}
+            {isProfileMenuOpen && (
+              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-100 bg-white py-1.5 shadow-lg z-50">
+                <Link
+                  href="/setting"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Settings
+                </Link>
+                <div className="my-1 border-t border-gray-100" />
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

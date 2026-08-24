@@ -93,6 +93,7 @@ export default function UserSettingsPage() {
           type: "success",
           text: "Profile updated successfully!",
         });
+        router.refresh();
       } else {
         const data = await res.json();
         setStatusMessage({

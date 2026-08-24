@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
+import { getSession } from "@/app/lib/auth";
 import { officers, officerCerts, certs, roles, officerCertRoles, auditLogs } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.role !== "admin" && session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const formData = await req.formData();
 
     const officerId = (formData.get("officerId") as string) || "";

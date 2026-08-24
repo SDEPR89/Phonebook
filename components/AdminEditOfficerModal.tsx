@@ -51,11 +51,11 @@ export default function AdminEditOfficerModal({
           ]);
           if (certsRes.ok) {
             const data = await certsRes.json();
-            setCertOptions(data.certs || []);
+            setCertOptions(Array.isArray(data) ? data : data.certs || []);
           }
           if (rolesRes.ok) {
             const data = await rolesRes.json();
-            setRoleOptions(data.roles || []);
+            setRoleOptions(Array.isArray(data) ? data : data.roles || []);
           }
         } catch (err) {
           console.error("Failed to fetch certs", err);
