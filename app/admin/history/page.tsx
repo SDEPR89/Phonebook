@@ -43,11 +43,15 @@ export default async function AdminHistoryPage({
   let toDate: Date | undefined = undefined;
 
   if (fromParam) {
-    const d = new Date(`${fromParam}T00:00:00`);
+    // If already has time component (YYYY-MM-DDTHH:MM), parse as-is; otherwise append midnight
+    const raw = fromParam.includes("T") ? fromParam : `${fromParam}T00:00:00`;
+    const d = new Date(raw);
     if (!isNaN(d.getTime())) fromDate = d;
   }
   if (toParam) {
-    const d = new Date(`${toParam}T23:59:59.999`);
+    // If already has time component (YYYY-MM-DDTHH:MM), parse as-is; otherwise append end-of-day
+    const raw = toParam.includes("T") ? toParam : `${toParam}T23:59:59.999`;
+    const d = new Date(raw);
     if (!isNaN(d.getTime())) toDate = d;
   }
 
@@ -112,99 +116,103 @@ export default async function AdminHistoryPage({
         {/* Filter Controls Bar */}
         <div className="mb-6 flex flex-col gap-3.5 rounded-2xl border border-slate-800/80 bg-[#0D121F] p-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Action & Occurred By Filters */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {/* Action Filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-24 text-xs font-semibold text-slate-400">
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5 w-13 shrink-0 text-xs font-semibold text-slate-400">
                 Action:
               </span>
-              <Link
-                href={buildUrl(null, role)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  !filter
-                    ? "border-slate-600 bg-slate-700 text-white"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300"
-                }`}
-              >
-                All Actions
-              </Link>
-              <Link
-                href={buildUrl("CREATED", role)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  filter === "CREATED"
-                    ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400"
-                }`}
-              >
-                CREATED
-              </Link>
-              <Link
-                href={buildUrl("UPDATED", role)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  filter === "UPDATED"
-                    ? "border-blue-500/30 bg-blue-500/20 text-blue-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-blue-500/20 hover:bg-blue-500/10 hover:text-blue-400"
-                }`}
-              >
-                UPDATED
-              </Link>
-              <Link
-                href={buildUrl("DELETED", role)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  filter === "DELETED"
-                    ? "border-red-500/30 bg-red-500/20 text-red-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
-                }`}
-              >
-                DELETED
-              </Link>
+              <div className="flex flex-wrap gap-1.5">
+                <Link
+                  href={buildUrl(null, role)}
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold transition ${
+                    !filter
+                      ? "border-slate-600 bg-slate-700 text-white"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300"
+                  }`}
+                >
+                  All Actions
+                </Link>
+                <Link
+                  href={buildUrl("CREATED", role)}
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold transition ${
+                    filter === "CREATED"
+                      ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400"
+                  }`}
+                >
+                  CREATED
+                </Link>
+                <Link
+                  href={buildUrl("UPDATED", role)}
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold transition ${
+                    filter === "UPDATED"
+                      ? "border-blue-500/30 bg-blue-500/20 text-blue-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-blue-500/20 hover:bg-blue-500/10 hover:text-blue-400"
+                  }`}
+                >
+                  UPDATED
+                </Link>
+                <Link
+                  href={buildUrl("DELETED", role)}
+                  className={`rounded-full border px-2 py-1 text-xs font-semibold transition ${
+                    filter === "DELETED"
+                      ? "border-red-500/30 bg-red-500/20 text-red-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                  }`}
+                >
+                  DELETED
+                </Link>
+              </div>
             </div>
 
             {/* Performed By Role Filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-24 text-xs font-semibold text-slate-400">
-                Occurred By:
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5 w-13 shrink-0 text-xs font-semibold text-slate-400">
+                By Role:
               </span>
-              <Link
-                href={buildUrl(filter, null)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  !role
-                    ? "border-slate-600 bg-slate-700 text-white"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300"
-                }`}
-              >
-                All Roles
-              </Link>
-              <Link
-                href={buildUrl(filter, "officer")}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  role === "officer"
-                    ? "border-indigo-500/30 bg-indigo-500/20 text-indigo-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-400"
-                }`}
-              >
-                Officer
-              </Link>
-              <Link
-                href={buildUrl(filter, "admin")}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  role === "admin"
-                    ? "border-purple-500/30 bg-purple-500/20 text-purple-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-purple-500/20 hover:bg-purple-500/10 hover:text-purple-400"
-                }`}
-              >
-                Admin
-              </Link>
-              <Link
-                href={buildUrl(filter, "superadmin")}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  role === "superadmin"
-                    ? "border-amber-500/30 bg-amber-500/20 text-amber-400"
-                    : "border-slate-800 bg-slate-900 text-slate-400 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-400"
-                }`}
-              >
-                Super Admin
-              </Link>
+              <div className="flex flex-wrap gap-1.5">
+                <Link
+                  href={buildUrl(filter, null)}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                    !role
+                      ? "border-slate-600 bg-slate-700 text-white"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300"
+                  }`}
+                >
+                  All Roles
+                </Link>
+                <Link
+                  href={buildUrl(filter, "officer")}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                    role === "officer"
+                      ? "border-indigo-500/30 bg-indigo-500/20 text-indigo-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-400"
+                  }`}
+                >
+                  Officer
+                </Link>
+                <Link
+                  href={buildUrl(filter, "admin")}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                    role === "admin"
+                      ? "border-purple-500/30 bg-purple-500/20 text-purple-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-purple-500/20 hover:bg-purple-500/10 hover:text-purple-400"
+                  }`}
+                >
+                  Admin
+                </Link>
+                <Link
+                  href={buildUrl(filter, "superadmin")}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                    role === "superadmin"
+                      ? "border-amber-500/30 bg-amber-500/20 text-amber-400"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-400"
+                  }`}
+                >
+                  Super Admin
+                </Link>
+              </div>
             </div>
           </div>
 

@@ -209,11 +209,15 @@ export default function HistoryDatePopover() {
     const fromStr = formatDate(startDate);
     const toStr = formatDate(now);
 
+    // For "Today", set To Time to right now; otherwise use end-of-day
+    const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const toTimeStr = preset === "today" ? nowTime : "23:59";
+
     setFrom(fromStr);
     setFromTime("00:00");
     setTo(toStr);
-    setToTime("23:59");
-    applyDates(fromStr, "00:00", toStr, "23:59");
+    setToTime(toTimeStr);
+    applyDates(fromStr, "00:00", toStr, toTimeStr);
   };
 
   // Calendar calculations
