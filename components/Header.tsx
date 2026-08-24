@@ -62,8 +62,9 @@ export default function Header() {
     router.push("/login");
   };
 
-  // Hide search bar ONLY on the root home page ("/")
+  // Hide search bar on the home page and login page
   const isHomePage = pathname === "/";
+  const isLoginPage = pathname === "/login";
 
   // Fetch certificates when drawer is first opened
   useEffect(() => {
@@ -119,7 +120,7 @@ export default function Header() {
 
         {/* Right side: Search Bar & User Profile Avatar */}
         <div className="flex items-center gap-4">
-          {!isHomePage && (
+          {!isHomePage || !isLoginPage && (
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>

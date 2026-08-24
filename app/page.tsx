@@ -7,8 +7,7 @@ export default function HomePage() {
   const [isNearCenter, setIsNearCenter] = useState(false);
 
   useEffect(() => {
-    // Radius threshold in pixels from screen center
-    const THRESHOLD = 220;
+    const THRESHOLD = 220; // Radius threshold in pixels from screen center
 
     const handleMouseMove = (e: MouseEvent) => {
       const centerX = window.innerWidth / 2;
