@@ -181,6 +181,7 @@ export default function AdminUserList({
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={handleEditSuccess}
+          viewerRole={viewerRole}
         />
       )}
 
@@ -188,6 +189,7 @@ export default function AdminUserList({
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
+        viewerRole={viewerRole}
       />
     </>
   );

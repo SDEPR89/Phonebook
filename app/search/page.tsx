@@ -9,7 +9,7 @@ import {
   officerCertRoles,
   roles,
 } from "@/db/schema";
-import { and, isNull, or, eq, sql } from "drizzle-orm";
+import { and, isNull, or, eq, ilike } from "drizzle-orm";
 
 type SearchPageProps = {
   searchParams: Promise<{ q?: string }>;
@@ -34,8 +34,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   let results: OfficerResultItem[] = [];
 
   if (term) {
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regexPattern = `\\y${escapedTerm}`;
+    const searchPattern = `%${term}%`;
 
     const rows = await db
       .select({
@@ -64,13 +63,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         and(
           isNull(officers.deletedAt),
           or(
-            sql`${officers.name} ~* ${regexPattern}`,
-            sql`${officers.email} ~* ${regexPattern}`,
-            sql`${phones.phoneNumber} ~* ${regexPattern}`,
-            sql`${certs.name} ~* ${regexPattern}`
+            ilike(officers.name, searchPattern),
+            ilike(officers.email, searchPattern),
+            ilike(phones.phoneNumber, searchPattern),
+            ilike(certs.name, searchPattern)
           )
         )
-      );
+      )
+      .limit(100);
 
     const officerMap = new Map<
       string,

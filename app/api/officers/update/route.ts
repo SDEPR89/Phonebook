@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     const email = (formData.get("email") as string) || "";
     const certName = (formData.get("certName") as string) || "";
     const roleName = (formData.get("roleName") as string) || "";
+    const requestedSystemRole = (formData.get("systemRole") as string) || "";
     const avatarFile = formData.get("avatar") as File | null;
 
     if (!officerId || !name || !email) {
@@ -30,6 +31,17 @@ export async function POST(req: Request) {
         { error: "Officer ID, Name, and Email are required." },
         { status: 400 },
       );
+    }
+
+    let systemRoleToUpdate: string | undefined = undefined;
+    if (requestedSystemRole && ["officer", "admin", "superadmin"].includes(requestedSystemRole)) {
+      if (session.role !== "superadmin") {
+        return NextResponse.json(
+          { error: "Only Super Admins can modify account system roles." },
+          { status: 403 }
+        );
+      }
+      systemRoleToUpdate = requestedSystemRole;
     }
 
     // Process Avatar File
@@ -93,6 +105,13 @@ export async function POST(req: Request) {
         new: email,
       });
     }
+    if (systemRoleToUpdate && currentOfficer.systemRole !== systemRoleToUpdate) {
+      changes.push({
+        field: "System Role",
+        old: currentOfficer.systemRole || "officer",
+        new: systemRoleToUpdate,
+      });
+    }
     if (avatarUrl) {
       changes.push({
         field: "Avatar",
@@ -107,12 +126,13 @@ export async function POST(req: Request) {
       changes.push({ field: "Role Name", old: oldRoleName, new: roleName });
     }
 
-    // 4. Update Officer Record (including avatarUrl if new photo provided)
+    // 4. Update Officer Record (including avatarUrl & systemRole if changed)
     await db
       .update(officers)
       .set({
         name,
         email,
+        ...(systemRoleToUpdate && { systemRole: systemRoleToUpdate }),
         ...(avatarUrl && { avatarUrl }),
         updatedAt: new Date(),
       })

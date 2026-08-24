@@ -213,43 +213,8 @@ export async function PUT(request: NextRequest) {
         });
       }
 
-      // Audit log formatting: first time password change shows Initial Password -> ••••••••, subsequent changes show •••••••• -> ••••••••
-      const allLogs = await db.select().from(auditLogs);
-      let initialPass = "";
-      let hasUpdatedPassBefore = false;
-
-      for (const log of allLogs) {
-        let changesArr: any[] = [];
-        if (Array.isArray(log.changes)) changesArr = log.changes;
-        else if (typeof log.changes === "string") {
-          try {
-            changesArr = JSON.parse(log.changes);
-          } catch {}
-        }
-
-        const isMatch =
-          log.officerId === officer.id ||
-          log.officerName === officer.name ||
-          changesArr.some(
-            (c) => c.new === officer.name || c.new === officer.email
-          );
-
-        if (isMatch) {
-          for (const c of changesArr) {
-            if (c.field === "Password") {
-              hasUpdatedPassBefore = true;
-            }
-            if (c.field === "Initial Password" && c.new) {
-              initialPass = c.new;
-            }
-          }
-        }
-      }
-
-      const oldPassDisplay =
-        !hasUpdatedPassBefore && initialPass ? initialPass : "••••••••";
-
-      changes.push({ field: "Password", old: oldPassDisplay, new: "••••••••" });
+      // Audit log formatting: always mask password changes securely as bullets
+      changes.push({ field: "Password", old: "••••••••", new: "••••••••" });
     }
 
     // Insert Audit Log if there are changes

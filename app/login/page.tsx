@@ -33,8 +33,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch (err) {
       console.error("Login submission error:", err);
       setError("An unexpected error occurred. Please try again.");

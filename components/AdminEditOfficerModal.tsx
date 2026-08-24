@@ -10,6 +10,7 @@ type AdminEditOfficerModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (updatedOfficer?: Partial<AdminOfficerItem>) => void;
+  viewerRole?: string;
 };
 
 export default function AdminEditOfficerModal({
@@ -17,6 +18,7 @@ export default function AdminEditOfficerModal({
   isOpen,
   onClose,
   onSuccess,
+  viewerRole = "admin",
 }: AdminEditOfficerModalProps) {
   const router = useRouter();
 
@@ -24,6 +26,7 @@ export default function AdminEditOfficerModal({
   const [email, setEmail] = useState(officer.email || "");
   const [certName, setCertName] = useState(officer.certName || "");
   const [roleName, setRoleName] = useState(officer.roleName || "");
+  const [systemRole, setSystemRole] = useState<string>(officer.systemRole || "officer");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
@@ -111,6 +114,7 @@ export default function AdminEditOfficerModal({
       email.trim() === (officer.email || "").trim() &&
       certName.trim() === (officer.certName || "").trim() &&
       roleName.trim() === (officer.roleName || "").trim() &&
+      systemRole === (officer.systemRole || "officer") &&
       !avatarFile;
 
     if (isUnchanged) {
@@ -128,6 +132,7 @@ export default function AdminEditOfficerModal({
     formData.append("email", email);
     formData.append("certName", certName);
     formData.append("roleName", roleName);
+    formData.append("systemRole", systemRole);
     if (avatarFile) {
       formData.append("avatar", avatarFile);
     }
@@ -149,6 +154,7 @@ export default function AdminEditOfficerModal({
           email,
           certName,
           roleName,
+          systemRole,
           profileUrl: avatarPreview || officer.profileUrl,
         });
         onClose();
@@ -292,6 +298,37 @@ export default function AdminEditOfficerModal({
               placeholder="Select Role Name"
               disabled={isLoadingOptions}
             />
+          </div>
+
+          {/* System Role Selection */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-300">
+              System Permission Role
+            </label>
+            {viewerRole === "superadmin" ? (
+              <select
+                value={systemRole}
+                onChange={(e) => setSystemRole(e.target.value)}
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              >
+                <option value="officer">User (Officer)</option>
+                <option value="admin">Administrator</option>
+                <option value="superadmin">Super Administrator</option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                disabled
+                value={
+                  systemRole === "superadmin"
+                    ? "Super Administrator"
+                    : systemRole === "admin"
+                    ? "Administrator"
+                    : "User (Officer)"
+                }
+                className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3.5 py-2 text-sm text-slate-400 cursor-not-allowed"
+              />
+            )}
           </div>
 
           <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">

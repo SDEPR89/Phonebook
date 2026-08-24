@@ -61,6 +61,7 @@ export const officers = pgTable(
   (table) => [
     index("officers_name_idx").on(table.name),
     index("officers_email_idx").on(table.email),
+    index("officers_deleted_at_idx").on(table.deletedAt),
   ],
 );
 
@@ -78,6 +79,7 @@ export const phones = pgTable(
   (table) => [
     index("phones_phone_number_idx").on(table.phoneNumber),
     index("phones_officer_id_idx").on(table.officerId),
+    index("phones_deleted_at_idx").on(table.deletedAt),
   ],
 );
 

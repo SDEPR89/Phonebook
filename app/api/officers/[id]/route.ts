@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
+import { getSession } from "@/app/lib/auth";
 import {
   officers,
   phones,
@@ -10,7 +11,7 @@ import {
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
 
-//GET officer deetails with timestamp
+//GET officer details with timestamp
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -46,6 +47,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.role !== "admin" && session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { id: officerId } = await params;
 
     if (!officerId) {
@@ -187,6 +196,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (session.role !== "admin" && session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { id: officerId } = await params;
     const now = new Date();
 
