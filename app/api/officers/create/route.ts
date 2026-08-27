@@ -13,6 +13,7 @@ import {
   officerCertRoles,
   auditLogs,
   loginCredentials,
+  certUnits,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
@@ -136,10 +137,14 @@ export async function POST(request: NextRequest) {
           .values({
             shortName: certName.trim(),
             fullName: certName.trim(),
-            unitId: defaultUnit.id,
             areaId: defaultArea.id,
           })
           .returning();
+
+        await db.insert(certUnits).values({
+          certId: existingCert.id,
+          unitId: defaultUnit.id,
+        });
       }
 
       const [newOfficerCert] = await db

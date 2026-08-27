@@ -42,6 +42,16 @@ export const REPORT_REASONS = [
 ] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
+export const CERT_STATUSES = [
+  "not_started",
+  "in_progress",
+  "blocked",
+  "completed",
+  "establishment_completed",
+  "pending_verification",
+] as const;
+export type CertStatus = (typeof CERT_STATUSES)[number];
+
 // =========================================================================
 // 3. Core Entities
 // =========================================================================
@@ -115,9 +125,9 @@ export const certs = pgTable(
     sarabanContacts: jsonb("saraban_contacts").$type<Array<{ type: "phone" | "fax", number: string }>>().default([]),
     contact247Email: varchar("contact247_email", { length: 255 }),
     contact247Phone: varchar("contact247_phone", { length: 128 }),
-    unitId: uuid("unit_id")
+    establishmentStatus: varchar("establishment_status", { length: 64 })
       .notNull()
-      .references(() => units.id, { onDelete: "cascade" }),
+      .default("not_started"),
     areaId: uuid("area_id")
       .notNull()
       .references(() => areas.id, { onDelete: "cascade" }),
@@ -129,8 +139,24 @@ export const certs = pgTable(
   (table) => [
     index("certs_short_name_idx").on(table.shortName),
     index("certs_admin_id_idx").on(table.adminId),
-    index("certs_unit_id_idx").on(table.unitId),
     index("certs_area_id_idx").on(table.areaId),
+  ],
+);
+
+// --- Junction: Membership of a Cert in multiple Units -----------------------
+export const certUnits = pgTable(
+  "cert_units",
+  {
+    certId: uuid("cert_id")
+      .notNull()
+      .references(() => certs.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id")
+      .notNull()
+      .references(() => units.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.certId, table.unitId] }),
+    index("cert_units_unit_id_idx").on(table.unitId),
   ],
 );
 
@@ -291,7 +317,7 @@ export const loginCredentialsRelations = relations(
 );
 
 export const unitsRelations = relations(units, ({ many }) => ({
-  certs: many(certs),
+  certUnits: many(certUnits),
 }));
 
 export const areasRelations = relations(areas, ({ many }) => ({
@@ -303,15 +329,23 @@ export const certsRelations = relations(certs, ({ one, many }) => ({
     fields: [certs.adminId],
     references: [officers.id],
   }),
-  unit: one(units, {
-    fields: [certs.unitId],
-    references: [units.id],
-  }),
   area: one(areas, {
     fields: [certs.areaId],
     references: [areas.id],
   }),
+  certUnits: many(certUnits),
   officerCerts: many(officerCerts),
+}));
+
+export const certUnitsRelations = relations(certUnits, ({ one }) => ({
+  cert: one(certs, {
+    fields: [certUnits.certId],
+    references: [certs.id],
+  }),
+  unit: one(units, {
+    fields: [certUnits.unitId],
+    references: [units.id],
+  }),
 }));
 
 export const officerCertsRelations = relations(

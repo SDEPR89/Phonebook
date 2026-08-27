@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
-import { officers, officerCerts, certs, units, areas, roles, officerCertRoles, auditLogs } from "@/db/schema";
+import { officers, officerCerts, certs, units, areas, roles, officerCertRoles, auditLogs, certUnits } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
 
 export async function POST(req: Request) {
@@ -173,12 +173,16 @@ export async function POST(req: Request) {
             shortName: certName,
             fullName: certName,
             adminId: officerId,
-            unitId: defaultUnit.id,
             areaId: defaultArea.id,
           })
           .returning({ id: certs.id });
 
         targetCertId = newCert.id;
+
+        await db.insert(certUnits).values({
+          certId: targetCertId,
+          unitId: defaultUnit.id,
+        });
       }
 
       if (junctionId) {

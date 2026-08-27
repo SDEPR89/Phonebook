@@ -10,6 +10,7 @@ import {
   areas,
   officerCertRoles,
   roles,
+  certUnits,
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
 
@@ -155,10 +156,14 @@ export async function PUT(
           .values({
             shortName: certName.trim(),
             fullName: certName.trim(),
-            unitId: defaultUnit.id,
             areaId: defaultArea.id,
           })
           .returning();
+
+        await db.insert(certUnits).values({
+          certId: existingCert.id,
+          unitId: defaultUnit.id,
+        });
       }
 
       const existingOfficerCert = await db
