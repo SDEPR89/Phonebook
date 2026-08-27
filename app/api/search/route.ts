@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { officers, phones, officerCerts, certs } from "@/db/schema";
-import { or, eq, isNull, and, sql } from "drizzle-orm";
+import { or, eq, isNull, and, sql, ilike } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const searchTerm = request.nextUrl.searchParams.get("q");
@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   const term = searchTerm.trim();
-  const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regexPattern = `\\y${escapedTerm}`;
+  const searchPattern = `%${term}%`; // Standard substring match for both EN and Thai
 
   const rows = await db
     .select({
@@ -22,6 +21,7 @@ export async function GET(request: NextRequest) {
       profileUrl: officers.avatarUrl,
       phoneNumber: phones.phoneNumber,
       certName: certs.shortName,
+      certFullName: certs.fullName,
     })
     .from(officers)
     .leftJoin(
@@ -34,16 +34,16 @@ export async function GET(request: NextRequest) {
       and(
         isNull(officers.deletedAt),
         or(
-          sql`${officers.name} ~* ${regexPattern}`,
-          sql`${officers.email} ~* ${regexPattern}`,
-          sql`${phones.phoneNumber} ~* ${regexPattern}`,
-          sql`${certs.shortName} ~* ${regexPattern}`,
-          sql`${certs.fullName} ~* ${regexPattern}`,
+          ilike(officers.name, searchPattern),
+          ilike(officers.email, searchPattern),
+          ilike(phones.phoneNumber, searchPattern),
+          ilike(certs.shortName, searchPattern),
+          ilike(certs.fullName, searchPattern),
         ),
       ),
     );
 
-  const prefixRegex = new RegExp(`\\b${escapedTerm}`, "i");
+  const lowerTerm = term.toLowerCase();
   const suggestionsMap = new Map<
     string,
     { id: string; text: string; profileUrl?: string | null }
@@ -52,14 +52,26 @@ export async function GET(request: NextRequest) {
   for (const row of rows) {
     let matchedText = "";
 
-    if (row.name && prefixRegex.test(row.name)) {
+    // Case-insensitive substring match working seamlessly for both English & Thai
+    if (row.name && row.name.toLowerCase().includes(lowerTerm)) {
       matchedText = row.name;
-    } else if (row.phoneNumber && prefixRegex.test(row.phoneNumber)) {
+    } else if (
+      row.phoneNumber &&
+      row.phoneNumber.toLowerCase().includes(lowerTerm)
+    ) {
       matchedText = row.phoneNumber;
-    } else if (row.email && prefixRegex.test(row.email)) {
+    } else if (row.email && row.email.toLowerCase().includes(lowerTerm)) {
       matchedText = row.email;
-    } else if (row.certName && prefixRegex.test(row.certName)) {
+    } else if (
+      row.certName &&
+      row.certName.toLowerCase().includes(lowerTerm)
+    ) {
       matchedText = row.certName;
+    } else if (
+      row.certFullName &&
+      row.certFullName.toLowerCase().includes(lowerTerm)
+    ) {
+      matchedText = row.certFullName;
     }
 
     if (matchedText && !suggestionsMap.has(matchedText)) {
