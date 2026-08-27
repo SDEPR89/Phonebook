@@ -83,12 +83,26 @@ export const phones = pgTable(
   ],
 );
 
+// --- Lookup Table: Sectors (หมวดหมู่ของ Cert) ----------------------------
+export const sectors = pgTable(
+  "sectors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 128 }).notNull().unique(),
+  },
+  (table) => [index("sectors_name_idx").on(table.name)],
+);
+
 export const certs = pgTable(
   "certs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 128 }).notNull().unique(),
     logoUrl: text("logo_url"),
+    location: text("location"),
+    sectorId: uuid("sector_id")
+      .notNull()
+      .references(() => sectors.id, { onDelete: "cascade" }),
     adminId: uuid("admin_id").references(() => officers.id, {
       onDelete: "set null",
     }),
@@ -97,6 +111,7 @@ export const certs = pgTable(
   (table) => [
     index("certs_name_idx").on(table.name),
     index("certs_admin_id_idx").on(table.adminId),
+    index("certs_sector_id_idx").on(table.sectorId),
   ],
 );
 
@@ -256,10 +271,18 @@ export const loginCredentialsRelations = relations(
   }),
 );
 
+export const sectorsRelations = relations(sectors, ({ many }) => ({
+  certs: many(certs),
+}));
+
 export const certsRelations = relations(certs, ({ one, many }) => ({
   admin: one(officers, {
     fields: [certs.adminId],
     references: [officers.id],
+  }),
+  sector: one(sectors, {
+    fields: [certs.sectorId],
+    references: [sectors.id],
   }),
   officerCerts: many(officerCerts),
 }));
