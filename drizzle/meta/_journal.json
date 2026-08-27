@@ -29,6 +29,13 @@
       "when": 1787302530968,
       "tag": "0003_feat_adding_loginCredentials",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787550620100,
+      "tag": "0004_check",
+      "breakpoints": true
     }
   ]
 }

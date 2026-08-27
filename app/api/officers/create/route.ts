@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     const phone = formData.get("phone") as string;
     const certName = formData.get("cert") as string;
     const roleName = formData.get("role") as string;
+    const requestedSystemRole = (formData.get("systemRole") as string) || "officer";
     const password = formData.get("password") as string;
 
     if (!name || !email) {
@@ -40,6 +41,21 @@ export async function POST(request: NextRequest) {
         { error: "Name and Email are required fields." },
         { status: 400 },
       );
+    }
+
+    let systemRole: "officer" | "admin" | "superadmin" = "officer";
+    if (session.role !== "superadmin") {
+      if (requestedSystemRole && requestedSystemRole !== "officer") {
+        return NextResponse.json(
+          { error: "Admins can only create Officer accounts." },
+          { status: 403 }
+        );
+      }
+      systemRole = "officer";
+    } else {
+      if (["officer", "admin", "superadmin"].includes(requestedSystemRole)) {
+        systemRole = requestedSystemRole as any;
+      }
     }
 
     const avatarFile = formData.get("avatar") as File | null;
@@ -58,6 +74,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         avatarUrl,
+        systemRole,
       })
       .returning();
 
@@ -142,11 +159,12 @@ export async function POST(request: NextRequest) {
     const changesArray = [
       { field: "Created Profile", old: "", new: name },
       { field: "Email", old: "", new: email },
+      { field: "System Role", old: "", new: systemRole },
       ...(phone ? [{ field: "Phone", old: "", new: phone.trim() }] : []),
       ...(certName ? [{ field: "Cert", old: "", new: certName.trim() }] : []),
       ...(roleName ? [{ field: "Role", old: "", new: roleName.trim() }] : []),
       ...(password && password.trim()
-        ? [{ field: "Initial Password", old: "", new: password.trim() }]
+        ? [{ field: "Initial Password", old: "", new: "••••••••" }]
         : []),
     ];
 

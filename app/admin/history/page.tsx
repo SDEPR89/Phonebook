@@ -79,7 +79,8 @@ export default async function AdminHistoryPage({
     .from(auditLogs)
     .leftJoin(officers, sql`${auditLogs.officerId}::uuid = ${officers.id}`)
     .where(and(...conditions))
-    .orderBy(desc(auditLogs.createdAt));
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(100);
 
   const buildUrl = (newFilter?: string | null, newRole?: string | null) => {
     const query = new URLSearchParams();
