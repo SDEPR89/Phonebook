@@ -6,7 +6,8 @@ import {
   phones,
   officerCerts,
   certs,
-  sectors,
+  units,
+  areas,
   officerCertRoles,
   roles,
 } from "@/db/schema";
@@ -133,11 +134,19 @@ export async function PUT(
         .where(eq(certs.shortName, certName.trim()));
 
       if (!existingCert) {
-        let [defaultSector] = await db.select().from(sectors).limit(1);
-        if (!defaultSector) {
-          [defaultSector] = await db
-            .insert(sectors)
-            .values({ name: "General" })
+        let [defaultUnit] = await db.select().from(units).limit(1);
+        if (!defaultUnit) {
+          [defaultUnit] = await db
+            .insert(units)
+            .values({ name: "General Unit" })
+            .returning();
+        }
+
+        let [defaultArea] = await db.select().from(areas).limit(1);
+        if (!defaultArea) {
+          [defaultArea] = await db
+            .insert(areas)
+            .values({ name: "General Area" })
             .returning();
         }
 
@@ -146,7 +155,8 @@ export async function PUT(
           .values({
             shortName: certName.trim(),
             fullName: certName.trim(),
-            sectorId: defaultSector.id,
+            unitId: defaultUnit.id,
+            areaId: defaultArea.id,
           })
           .returning();
       }

@@ -4,6 +4,8 @@ import {
   officers,
   phones,
   certs,
+  units,
+  areas,
   officerCerts,
   roles,
   officerCertRoles,
@@ -84,6 +86,41 @@ async function seed() {
   console.log("✅ Phone numbers linked.");
 
   // -----------------------------------------------------------------------
+  // 3.5 Units & Areas
+  // -----------------------------------------------------------------------
+  const [unitGov, unitRegulator, unitCii] = await db
+    .insert(units)
+    .values([
+      { name: "หน่วยงานรัฐ" },
+      { name: "หน่วยงานกำกับดูแล" },
+      { name: "หน่วยงานโครงสร้างพื้นฐานสำคัญทางสารสนเทศ" },
+    ])
+    .returning();
+
+  const [
+    areaSecurity,
+    areaFinance,
+    areaTransport,
+    areaHealth,
+    areaTelecom,
+    areaEnergy,
+    areaPublic,
+  ] = await db
+    .insert(areas)
+    .values([
+      { name: "ด้านความมั่นคงของรัฐ" },
+      { name: "ด้านการเงินการธนาคาร" },
+      { name: "ด้านการขนส่งและโลจิสติกส์" },
+      { name: "ด้านสาธารณสุข" },
+      { name: "ด้านเทคโนโลยีสารสนเทศและโทรคมนาคม" },
+      { name: "ด้านพลังงานและสาธารณูปโภค" },
+      { name: "ด้านบริการภาครัฐที่สำคัญ" },
+    ])
+    .returning();
+
+  console.log("✅ Units and Areas created.");
+
+  // -----------------------------------------------------------------------
   // 4. Certs (Organizations: THAICERT & EnergyCERT)
   // -----------------------------------------------------------------------
   const [thaiCert, energyCert] = await db
@@ -93,13 +130,15 @@ async function seed() {
         shortName: "THAICERT",
         fullName: "Thailand Computer Emergency Response Team",
         adminId: adminThaiCert.id,
-        sectorId: "00000000-0000-0000-0000-000000000000",
+        unitId: unitGov.id,
+        areaId: areaSecurity.id,
       },
       {
         shortName: "EnergyCERT",
         fullName: "Energy Sector Computer Emergency Response Team",
         adminId: adminEnergyCert.id,
-        sectorId: "00000000-0000-0000-0000-000000000000",
+        unitId: unitCii.id,
+        areaId: areaEnergy.id,
       },
     ])
     .returning();

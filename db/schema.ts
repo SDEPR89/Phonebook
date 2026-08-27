@@ -83,14 +83,24 @@ export const phones = pgTable(
   ],
 );
 
-// --- Lookup Table: Sectors (หมวดหมู่ของ Cert) ----------------------------
-export const sectors = pgTable(
-  "sectors",
+// --- Lookup Table: Units (หน่วย) ----------------------------
+export const units = pgTable(
+  "units",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 128 }).notNull().unique(),
   },
-  (table) => [index("sectors_name_idx").on(table.name)],
+  (table) => [index("units_name_idx").on(table.name)],
+);
+
+// --- Lookup Table: Areas (ด้าน) ----------------------------
+export const areas = pgTable(
+  "areas",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 128 }).notNull().unique(),
+  },
+  (table) => [index("areas_name_idx").on(table.name)],
 );
 
 export const certs = pgTable(
@@ -101,9 +111,16 @@ export const certs = pgTable(
     fullName: varchar("full_name", { length: 255 }).notNull(),
     logoUrl: text("logo_url"),
     location: text("location"),
-    sectorId: uuid("sector_id")
+    sarabanEmail: varchar("saraban_email", { length: 255 }),
+    sarabanContacts: jsonb("saraban_contacts").$type<Array<{ type: "phone" | "fax", number: string }>>().default([]),
+    contact247Email: varchar("contact247_email", { length: 255 }),
+    contact247Phone: varchar("contact247_phone", { length: 128 }),
+    unitId: uuid("unit_id")
       .notNull()
-      .references(() => sectors.id, { onDelete: "cascade" }),
+      .references(() => units.id, { onDelete: "cascade" }),
+    areaId: uuid("area_id")
+      .notNull()
+      .references(() => areas.id, { onDelete: "cascade" }),
     adminId: uuid("admin_id").references(() => officers.id, {
       onDelete: "set null",
     }),
@@ -112,7 +129,8 @@ export const certs = pgTable(
   (table) => [
     index("certs_short_name_idx").on(table.shortName),
     index("certs_admin_id_idx").on(table.adminId),
-    index("certs_sector_id_idx").on(table.sectorId),
+    index("certs_unit_id_idx").on(table.unitId),
+    index("certs_area_id_idx").on(table.areaId),
   ],
 );
 
@@ -272,7 +290,11 @@ export const loginCredentialsRelations = relations(
   }),
 );
 
-export const sectorsRelations = relations(sectors, ({ many }) => ({
+export const unitsRelations = relations(units, ({ many }) => ({
+  certs: many(certs),
+}));
+
+export const areasRelations = relations(areas, ({ many }) => ({
   certs: many(certs),
 }));
 
@@ -281,9 +303,13 @@ export const certsRelations = relations(certs, ({ one, many }) => ({
     fields: [certs.adminId],
     references: [officers.id],
   }),
-  sector: one(sectors, {
-    fields: [certs.sectorId],
-    references: [sectors.id],
+  unit: one(units, {
+    fields: [certs.unitId],
+    references: [units.id],
+  }),
+  area: one(areas, {
+    fields: [certs.areaId],
+    references: [areas.id],
   }),
   officerCerts: many(officerCerts),
 }));

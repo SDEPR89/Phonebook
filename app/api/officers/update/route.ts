@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
-import { officers, officerCerts, certs, sectors, roles, officerCertRoles, auditLogs } from "@/db/schema";
+import { officers, officerCerts, certs, units, areas, roles, officerCertRoles, auditLogs } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
 
 export async function POST(req: Request) {
@@ -151,11 +151,19 @@ export async function POST(req: Request) {
       if (existingCert.length > 0) {
         targetCertId = existingCert[0].id;
       } else {
-        let [defaultSector] = await db.select().from(sectors).limit(1);
-        if (!defaultSector) {
-          [defaultSector] = await db
-            .insert(sectors)
-            .values({ name: "General" })
+        let [defaultUnit] = await db.select().from(units).limit(1);
+        if (!defaultUnit) {
+          [defaultUnit] = await db
+            .insert(units)
+            .values({ name: "General Unit" })
+            .returning();
+        }
+
+        let [defaultArea] = await db.select().from(areas).limit(1);
+        if (!defaultArea) {
+          [defaultArea] = await db
+            .insert(areas)
+            .values({ name: "General Area" })
             .returning();
         }
 
@@ -165,7 +173,8 @@ export async function POST(req: Request) {
             shortName: certName,
             fullName: certName,
             adminId: officerId,
-            sectorId: defaultSector.id,
+            unitId: defaultUnit.id,
+            areaId: defaultArea.id,
           })
           .returning({ id: certs.id });
 
