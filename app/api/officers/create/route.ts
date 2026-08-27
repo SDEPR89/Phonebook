@@ -6,6 +6,7 @@ import {
   officers,
   phones,
   certs,
+  sectors,
   officerCerts,
   roles,
   officerCertRoles,
@@ -110,12 +111,24 @@ export async function POST(request: NextRequest) {
       let [existingCert] = await db
         .select()
         .from(certs)
-        .where(eq(certs.name, certName.trim()));
+        .where(eq(certs.shortName, certName.trim()));
 
       if (!existingCert) {
+        let [defaultSector] = await db.select().from(sectors).limit(1);
+        if (!defaultSector) {
+          [defaultSector] = await db
+            .insert(sectors)
+            .values({ name: "General" })
+            .returning();
+        }
+
         [existingCert] = await db
           .insert(certs)
-          .values({ name: certName.trim() })
+          .values({
+            shortName: certName.trim(),
+            fullName: certName.trim(),
+            sectorId: defaultSector.id,
+          })
           .returning();
       }
 

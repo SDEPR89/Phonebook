@@ -33,7 +33,7 @@ export default async function OfficerDetailPage({
       createdAt: officers.createdAt,
       updatedAt: officers.updatedAt,
       phoneNumber: phones.phoneNumber,
-      certName: certs.name,
+      certName: certs.shortName,
       certIssuedAt: officerCerts.createdAt,
       roleName: roles.name,
     })

@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         profileUrl: officers.avatarUrl,
         phoneNumber: phones.phoneNumber,
         certId: certs.id,
-        certName: certs.name,
+        certName: certs.shortName,
         roleName: roles.name,
       })
       .from(officers)
@@ -66,7 +66,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             ilike(officers.name, searchPattern),
             ilike(officers.email, searchPattern),
             ilike(phones.phoneNumber, searchPattern),
-            ilike(certs.name, searchPattern)
+            ilike(certs.shortName, searchPattern),
+            ilike(certs.fullName, searchPattern)
           )
         )
       )

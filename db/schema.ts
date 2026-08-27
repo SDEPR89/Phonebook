@@ -97,7 +97,8 @@ export const certs = pgTable(
   "certs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    name: varchar("name", { length: 128 }).notNull().unique(),
+    shortName: varchar("short_name", { length: 128 }).notNull().unique(),
+    fullName: varchar("full_name", { length: 255 }).notNull(),
     logoUrl: text("logo_url"),
     location: text("location"),
     sectorId: uuid("sector_id")
@@ -109,7 +110,7 @@ export const certs = pgTable(
     ...timestamps,
   },
   (table) => [
-    index("certs_name_idx").on(table.name),
+    index("certs_short_name_idx").on(table.shortName),
     index("certs_admin_id_idx").on(table.adminId),
     index("certs_sector_id_idx").on(table.sectorId),
   ],

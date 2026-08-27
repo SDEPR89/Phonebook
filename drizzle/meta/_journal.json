@@ -43,6 +43,13 @@
       "when": 1787812799604,
       "tag": "0005_add sector and location",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787813000000,
+      "tag": "0006_update_cert_names",
+      "breakpoints": true
     }
   ]
 }

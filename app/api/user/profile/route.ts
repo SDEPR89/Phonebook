@@ -53,7 +53,7 @@ export async function GET() {
       .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
 
     const certRows = await db
-      .select({ certName: certs.name, roleName: roles.name })
+      .select({ certName: certs.shortName, roleName: roles.name })
       .from(officerCerts)
       .leftJoin(certs, eq(officerCerts.certId, certs.id))
       .leftJoin(

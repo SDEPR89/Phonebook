@@ -54,7 +54,7 @@ export default async function AdminPage() {
         name: officer.name,
         email: officer.email,
         systemRole: officer.systemRole ?? "officer",
-        certName: officer.officerCerts[0]?.cert?.name || undefined,
+        certName: officer.officerCerts[0]?.cert?.shortName || undefined,
         roleName:
           officer.officerCerts[0]?.officerCertRoles[0]?.role?.name ||
           undefined,

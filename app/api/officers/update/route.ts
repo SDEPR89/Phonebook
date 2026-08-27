@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
-import { officers, officerCerts, certs, roles, officerCertRoles, auditLogs } from "@/db/schema";
+import { officers, officerCerts, certs, sectors, roles, officerCertRoles, auditLogs } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
 
 export async function POST(req: Request) {
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const currentCertRoleLink = await db
       .select({
         certId: certs.id,
-        certName: certs.name,
+        certName: certs.shortName,
         junctionId: officerCerts.id,
         roleName: roles.name,
         roleJunctionId: officerCertRoles.roleId, // just checking if it exists
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
       const existingCert = await db
         .select({ id: certs.id })
         .from(certs)
-        .where(ilike(certs.name, certName))
+        .where(ilike(certs.shortName, certName))
         .limit(1);
 
       let targetCertId: string;
@@ -151,9 +151,22 @@ export async function POST(req: Request) {
       if (existingCert.length > 0) {
         targetCertId = existingCert[0].id;
       } else {
+        let [defaultSector] = await db.select().from(sectors).limit(1);
+        if (!defaultSector) {
+          [defaultSector] = await db
+            .insert(sectors)
+            .values({ name: "General" })
+            .returning();
+        }
+
         const [newCert] = await db
           .insert(certs)
-          .values({ name: certName, adminId: officerId })
+          .values({
+            shortName: certName,
+            fullName: certName,
+            adminId: officerId,
+            sectorId: defaultSector.id,
+          })
           .returning({ id: certs.id });
 
         targetCertId = newCert.id;

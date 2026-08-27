@@ -90,12 +90,16 @@ async function seed() {
     .insert(certs)
     .values([
       {
-        name: "THAICERT",
+        shortName: "THAICERT",
+        fullName: "Thailand Computer Emergency Response Team",
         adminId: adminThaiCert.id,
+        sectorId: "00000000-0000-0000-0000-000000000000",
       },
       {
-        name: "EnergyCERT",
+        shortName: "EnergyCERT",
+        fullName: "Energy Sector Computer Emergency Response Team",
         adminId: adminEnergyCert.id,
+        sectorId: "00000000-0000-0000-0000-000000000000",
       },
     ])
     .returning();

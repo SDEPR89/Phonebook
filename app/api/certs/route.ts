@@ -9,7 +9,7 @@ export async function GET() {
     const allCerts = await db
       .select()
       .from(certs)
-      .orderBy(asc(certs.name)); // Adjust column name if different in your schema
+      .orderBy(asc(certs.shortName));
 
     return NextResponse.json(allCerts);
   } catch (error) {

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       email: officers.email,
       profileUrl: officers.avatarUrl,
       phoneNumber: phones.phoneNumber,
-      certName: certs.name,
+      certName: certs.shortName,
     })
     .from(officers)
     .leftJoin(
@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
           sql`${officers.name} ~* ${regexPattern}`,
           sql`${officers.email} ~* ${regexPattern}`,
           sql`${phones.phoneNumber} ~* ${regexPattern}`,
-          sql`${certs.name} ~* ${regexPattern}`,
+          sql`${certs.shortName} ~* ${regexPattern}`,
+          sql`${certs.fullName} ~* ${regexPattern}`,
         ),
       ),
     );
