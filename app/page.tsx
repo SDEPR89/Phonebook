@@ -5,7 +5,25 @@ import SearchBar from "@/components/SearchBar";
 
 export default function HomePage() {
   const [isNearCenter, setIsNearCenter] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+  // Check auth status matching the Header component
+  useEffect(() => {
+    fetch("/api/user/profile", { cache: "no-store" })
+      .then((res) => {
+        setIsLoggedIn(res.ok);
+      })
+      .catch((err) => {
+        console.error("Failed to check auth status:", err);
+        setIsLoggedIn(false);
+      })
+      .finally(() => {
+        setIsLoadingAuth(false);
+      });
+  }, []);
+
+  // Mouse distance detection for ring scaling effect
   useEffect(() => {
     const THRESHOLD = 220; // Radius threshold in pixels from screen center
 
@@ -128,7 +146,7 @@ export default function HomePage() {
       />
 
       {/* 6. Foreground Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center gap-6">
+      <div className="relative z-10 flex flex-col items-center justify-center gap-6 text-center">
         <h1
           className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl transition-transform duration-500 ease-out origin-center ${
             isNearCenter ? "scale-110" : "scale-100"
@@ -137,7 +155,16 @@ export default function HomePage() {
           CERT Community Phonebook
         </h1>
 
-        <SearchBar />
+        {/* Conditional Search Bar / Loading State */}
+        {isLoadingAuth ? (
+          <div className="h-12 w-80 max-w-md animate-pulse rounded-full bg-indigo-200/20 backdrop-blur-md" />
+        ) : isLoggedIn ? (
+          <SearchBar />
+        ) : (
+          <p className="max-w-md rounded-2xl border border-indigo-200/20 bg-indigo-950/40 px-6 py-3 text-sm font-medium text-indigo-200/80 backdrop-blur-md shadow-lg">
+            Please sign in to search the community phonebook.
+          </p>
+        )}
       </div>
     </main>
   );
