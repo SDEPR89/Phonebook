@@ -74,6 +74,7 @@ export default function AdminEditOfficerModal({
   if (!isOpen) return null;
 
   const isReadOnly = viewerRole !== "superadmin" && systemRole === "superadmin";
+  const isProtectedTarget = viewerRole !== "superadmin" && systemRole === "superadmin";
 
   const handleDelete = async () => {
     if (isProtectedTarget) {
