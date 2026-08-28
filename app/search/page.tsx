@@ -274,22 +274,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   })()}
                   
                   <div className="mt-4 flex flex-wrap items-center gap-2">
-                    {exactCert.areaName && (
-                      <div className="flex items-center gap-2 text-indigo-100">
-                        <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-semibold border border-indigo-400/30">
-                          {exactCert.areaName}
-                        </span>
-                      </div>
-                    )}
-                    {exactCert.units.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 text-indigo-100">
-                        {exactCert.units.map((unitName: string, idx: number) => (
-                          <span key={idx} className="rounded-full bg-purple-500/20 px-3 py-1 text-sm font-semibold border border-purple-400/30">
-                            {unitName}
+                    {exactCert.areaName &&
+                      exactCert.areaName.split(',').map((area: string, idx: number) => (
+                        <div key={`area-${idx}`} className="flex items-center gap-2 text-indigo-100">
+                          <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-semibold border border-indigo-400/30">
+                            {area.trim()}
                           </span>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      ))}
+                    {exactCert.units.length > 0 &&
+                      exactCert.units.flatMap((u: string) => u.split(',')).map((unitName: string, idx: number) => (
+                        <div key={`unit-${idx}`} className="flex flex-wrap items-center gap-2 text-indigo-100">
+                          <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm font-semibold border border-purple-400/30">
+                            {unitName.trim()}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
