@@ -139,7 +139,7 @@ export default async function OfficerDetailPage({
             href={q ? `/search?q=${encodeURIComponent(q)}` : "/"}
             className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/30 bg-indigo-950/60 px-4 py-1.5 text-xs font-semibold text-indigo-200 shadow-inner backdrop-blur-md transition-all hover:border-indigo-200/60 hover:bg-indigo-900/80 hover:text-white"
           >
-            ← Back to Search
+            ← กลับหน้าค้นหา
           </Link>
         </div>
 
@@ -174,11 +174,11 @@ export default async function OfficerDetailPage({
         {/* Phone Numbers */}
         <div className="rounded-3xl border border-indigo-200/20 bg-white/95 p-6 shadow-2xl backdrop-blur-xl text-slate-700">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-indigo-900">
-            Phone Number
+            เบอร์ติดต่อ
           </h2>
           {phoneNumbers.size === 0 ? (
             <p className="text-sm font-medium text-slate-400">
-              No phone numbers available.
+              ไม่มีเบอร์ติดต่อ
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -197,7 +197,7 @@ export default async function OfficerDetailPage({
         {/* Cert & Corresponding Roles */}
         <div className="rounded-3xl border border-indigo-200/20 bg-white/95 p-6 shadow-2xl backdrop-blur-xl text-slate-700">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-indigo-900">
-            Certifications & Roles
+            CERT และตำแหน่ง
           </h2>
           {certRolesMap.size === 0 ? (
             <p className="text-sm font-medium text-slate-400">No Cert available.</p>
@@ -217,11 +217,11 @@ export default async function OfficerDetailPage({
 
                       <div className="mt-2">
                         <span className="text-xs font-bold uppercase tracking-wide text-indigo-900/70">
-                          Roles
+                          ตำแหน่ง
                         </span>
                         {rolesList.length === 0 ? (
                           <p className="mt-0.5 text-sm font-medium text-slate-400">
-                            No roles assigned
+                            ไม่มีตำแหน่ง
                           </p>
                         ) : (
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
