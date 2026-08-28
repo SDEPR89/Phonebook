@@ -35,6 +35,7 @@ export default async function AdminCertsPage() {
   let certs: AdminCertItem[] = [];
   let areas: { id: string; name: string }[] = [];
   let units: { id: string; name: string }[] = [];
+  let allOfficers: { id: string; name: string }[] = [];
   try {
     areas = await db.query.areas.findMany({
       orderBy: (areas, { asc }) => [asc(areas.name)],
@@ -58,6 +59,11 @@ export default async function AdminCertsPage() {
         unitTranslationMap.set(u.id, [u.id]);
       }
     }
+
+    const dbOfficers = await db.query.officers.findMany({
+      orderBy: (officers, { asc }) => [asc(officers.name)],
+    });
+    allOfficers = dbOfficers.map(o => ({ id: o.id, name: o.name }));
 
     const dbCerts = await db.query.certs.findMany({
       orderBy: (certs, { asc }) => [asc(certs.shortName)],
@@ -106,7 +112,7 @@ export default async function AdminCertsPage() {
           <span>←</span> Back to Admin Dashboard
         </Link>
         
-        <AdminCertList initialCerts={certs} areas={areas} units={units} />
+        <AdminCertList initialCerts={certs} areas={areas} units={units} allOfficers={allOfficers} />
       </div>
     </main>
   );

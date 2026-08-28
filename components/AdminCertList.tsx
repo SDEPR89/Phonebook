@@ -11,6 +11,7 @@ interface AdminCertListProps {
   initialCerts?: AdminCertItem[];
   areas?: { id: string; name: string }[];
   units?: { id: string; name: string }[];
+  allOfficers?: { id: string; name: string }[];
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -40,7 +41,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   },
 };
 
-export default function AdminCertList({ initialCerts = [], areas = [], units = [] }: AdminCertListProps) {
+export default function AdminCertList({ initialCerts = [], areas = [], units = [], allOfficers = [] }: AdminCertListProps) {
   const router = useRouter();
 
   const [selectedCert, setSelectedCert] = useState<AdminCertItem | null>(null);

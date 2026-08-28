@@ -34,6 +34,11 @@ export async function POST(req: Request) {
     if (sarabanContactsRaw) {
       try { sarabanContacts = JSON.parse(sarabanContactsRaw); } catch(e) {}
     }
+    const coordinatorsRaw = formData.get("coordinators") as string;
+    let coordinators: string[] = [];
+    if (coordinatorsRaw) {
+      try { coordinators = JSON.parse(coordinatorsRaw); } catch(e) {}
+    }
     const contact247Email = (formData.get("contact247Email") as string) || "";
     const contact247Phone = (formData.get("contact247Phone") as string) || "";
     const establishmentStatus = (formData.get("establishmentStatus") as string) || "not_started";
@@ -76,6 +81,7 @@ export async function POST(req: Request) {
       location: location || null,
       sarabanEmail: sarabanEmail || null,
       sarabanContacts: sarabanContacts,
+      coordinators: coordinators,
       contact247Email: contact247Email || null,
       contact247Phone: contact247Phone || null,
       establishmentStatus,
