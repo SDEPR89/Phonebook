@@ -8,6 +8,9 @@ import {
   certs,
   officerCertRoles,
   roles,
+  areas,
+  certUnits,
+  units,
 } from "@/db/schema";
 import { and, isNull, or, eq, ilike } from "drizzle-orm";
 
@@ -32,8 +35,41 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const term = q?.trim() || "";
 
   let results: OfficerResultItem[] = [];
+  let exactCert: any = null;
 
   if (term) {
+    const certRows = await db
+      .select({
+        id: certs.id,
+        shortName: certs.shortName,
+        fullName: certs.fullName,
+        logoUrl: certs.logoUrl,
+        location: certs.location,
+        sarabanEmail: certs.sarabanEmail,
+        sarabanContacts: certs.sarabanContacts,
+        contact247Email: certs.contact247Email,
+        contact247Phone: certs.contact247Phone,
+        areaName: areas.name,
+      })
+      .from(certs)
+      .leftJoin(areas, eq(certs.areaId, areas.id))
+      .where(ilike(certs.shortName, term))
+      .limit(1);
+
+    if (certRows.length > 0) {
+      const certObj = certRows[0];
+      const unitRows = await db
+        .select({ name: units.name })
+        .from(certUnits)
+        .innerJoin(units, eq(certUnits.unitId, units.id))
+        .where(eq(certUnits.certId, certObj.id));
+
+      exactCert = {
+        ...certObj,
+        units: unitRows.map((u) => u.name),
+      };
+    }
+
     const searchPattern = `%${term}%`;
 
     const rows = await db
@@ -189,6 +225,138 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
       {/* FOREGROUND CONTENT CONTAINER */}
       <div className="relative z-10 mx-auto max-w-6xl">
+        {exactCert && (
+          <div className="mb-10 overflow-hidden rounded-3xl border border-indigo-200/20 bg-white/5 shadow-2xl backdrop-blur-2xl">
+            <div className="flex flex-col md:flex-row p-8 md:p-10 gap-8 items-start">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                <div className="flex h-32 w-32 md:h-40 md:w-40 items-center justify-center rounded-2xl bg-white p-4 shadow-inner">
+                  {exactCert.logoUrl ? (
+                    <div className="relative h-full w-full">
+                      <Image
+                        src={exactCert.logoUrl}
+                        alt={exactCert.shortName}
+                        fill
+                        unoptimized
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-4xl font-black text-indigo-900/40">CERT</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex-grow flex flex-col justify-between h-full space-y-6">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-snug">
+                    {exactCert.shortName}
+                  </h2>
+                  
+                  {(() => {
+                    const match = exactCert.fullName.match(/^(.*?)(?:\s*\((.*?)\))?$/);
+                    const thaiName = match?.[1]?.trim() || exactCert.fullName;
+                    const engName = match?.[2]?.trim() || "";
+                    
+                    return (
+                      <>
+                        <p className="text-xl font-semibold text-indigo-200 mt-2">
+                          {thaiName}
+                        </p>
+                        {engName && (
+                          <p className="text-lg font-medium text-indigo-300 mt-1">
+                            {engName}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
+                  
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {exactCert.areaName && (
+                      <div className="flex items-center gap-2 text-indigo-100">
+                        <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-semibold border border-indigo-400/30">
+                          {exactCert.areaName}
+                        </span>
+                      </div>
+                    )}
+                    {exactCert.units.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 text-indigo-100">
+                        {exactCert.units.map((unitName: string, idx: number) => (
+                          <span key={idx} className="rounded-full bg-purple-500/20 px-3 py-1 text-sm font-semibold border border-purple-400/30">
+                            {unitName}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-indigo-950/40 p-5 rounded-2xl border border-indigo-500/10">
+                  {/* 24/7 Contact */}
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">24/7 Contact</h3>
+                    <p className="text-sm text-indigo-100 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      {exactCert.contact247Phone || "-"}
+                    </p>
+                    <p className="text-sm text-indigo-100 flex items-center gap-2 break-all">
+                      <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      {exactCert.contact247Email || "-"}
+                    </p>
+                  </div>
+
+                  {/* Saraban Contact */}
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">Saraban Contact</h3>
+                    {exactCert.sarabanContacts?.length > 0 ? (
+                      exactCert.sarabanContacts.map((c: any, i: number) => (
+                        <p key={i} className="text-sm text-indigo-100 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          {c.number} {c.type}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-sm text-indigo-100 flex items-center gap-2">
+                         <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        -
+                      </p>
+                    )}
+                    <p className="text-sm text-indigo-100 flex items-center gap-2 break-all">
+                      <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      {exactCert.sarabanEmail || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Location */}
+                {exactCert.location && (
+                  <div className="flex items-start gap-3 bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/10">
+                    <svg className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-sm text-indigo-100 leading-relaxed">
+                      {exactCert.location}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
             Results for{" "}
