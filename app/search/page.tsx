@@ -50,13 +50,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       .from(officers)
       .leftJoin(
         phones,
-        and(eq(phones.officerId, officers.id), isNull(phones.deletedAt))
+        and(eq(phones.officerId, officers.id), isNull(phones.deletedAt)),
       )
       .leftJoin(officerCerts, eq(officerCerts.officerId, officers.id))
       .leftJoin(certs, eq(certs.id, officerCerts.certId))
       .leftJoin(
         officerCertRoles,
-        eq(officerCertRoles.officerCertId, officerCerts.id)
+        eq(officerCertRoles.officerCertId, officerCerts.id),
       )
       .leftJoin(roles, eq(roles.id, officerCertRoles.roleId))
       .where(
@@ -67,9 +67,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             ilike(officers.email, searchPattern),
             ilike(phones.phoneNumber, searchPattern),
             ilike(certs.shortName, searchPattern),
-            ilike(certs.fullName, searchPattern)
-          )
-        )
+            ilike(certs.fullName, searchPattern),
+          ),
+        ),
       )
       .limit(100);
 
@@ -191,7 +191,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
-            Results for <span className="text-indigo-200">&quot;{term}&quot;</span>
+            Results for{" "}
+            <span className="text-indigo-200">&quot;{term}&quot;</span>
           </h1>
           <span className="rounded-full border border-indigo-200/30 bg-indigo-900/50 px-3.5 py-1 text-xs font-semibold text-indigo-100 shadow-inner backdrop-blur-md">
             {results.length} Found
@@ -211,11 +212,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <table className="w-full text-left text-sm text-slate-700">
                 <thead className="border-b border-indigo-100 bg-indigo-50/80 text-xs font-bold uppercase tracking-wider text-indigo-900">
                   <tr>
-                    <th scope="col" className="px-6 py-4">Officer</th>
-                    <th scope="col" className="px-6 py-4">Email</th>
-                    <th scope="col" className="px-6 py-4">Phone</th>
-                    <th scope="col" className="px-6 py-4">CERT</th>
-                    <th scope="col" className="px-6 py-4">Role</th>
+                    <th scope="col" className="px-6 py-4">
+                      CERT
+                    </th>
+                    <th scope="col" className="px-6 py-4">
+                      Officer
+                    </th>
+                    <th scope="col" className="px-6 py-4">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-4">
+                      Phone
+                    </th>
+                    <th scope="col" className="px-6 py-4">
+                      Role
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 font-medium">
@@ -229,6 +240,25 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         key={r.officerId}
                         className="group relative transition-colors hover:bg-indigo-50/60"
                       >
+                        {/* CERT */}
+                        <td className="px-6 py-4 text-slate-800">
+                          {r.certs.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {r.certs.map((c, idx) => (
+                                <span
+                                  key={idx}
+                                  className="font-semibold text-indigo-950"
+                                >
+                                  {c.certName}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-normal">
+                              No Cert
+                            </span>
+                          )}
+                        </td>
                         {/* Name & Avatar */}
                         <td className="relative px-6 py-4">
                           <Link
@@ -236,8 +266,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             className="flex items-center gap-3 font-semibold text-slate-900 group-hover:text-indigo-600 focus:outline-none"
                           >
                             {/* Clickable Overlay Link covering whole row */}
-                            <span className="absolute inset-0 z-10" aria-hidden="true" />
-                            
+                            <span
+                              className="absolute inset-0 z-10"
+                              aria-hidden="true"
+                            />
+
                             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-indigo-200 bg-indigo-50">
                               {r.profileUrl ? (
                                 <Image
@@ -275,28 +308,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                           )}
                         </td>
 
-                        {/* CERT */}
-                        <td className="px-6 py-4 text-slate-800">
-                          {r.certs.length > 0 ? (
-                            <div className="flex flex-col gap-1">
-                              {r.certs.map((c, idx) => (
-                                <span key={idx} className="font-semibold text-indigo-950">
-                                  {c.certName}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 font-normal">No Cert</span>
-                          )}
-                        </td>
-
                         {/* Role */}
                         <td className="px-6 py-4 text-slate-600">
                           {r.certs.length > 0 ? (
                             <div className="flex flex-col gap-1">
                               {r.certs.map((c, idx) => (
                                 <span key={idx}>
-                                  {c.roles.length > 0 ? c.roles.join(", ") : "-"}
+                                  {c.roles.length > 0
+                                    ? c.roles.join(", ")
+                                    : "-"}
                                 </span>
                               ))}
                             </div>
