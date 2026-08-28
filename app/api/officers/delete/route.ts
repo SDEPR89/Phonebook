@@ -40,9 +40,9 @@ export async function DELETE(req: Request) {
 
     const officer = existingOfficer[0];
 
-    if (session.role === "admin" && officer.systemRole === "superadmin") {
+    if (officer.systemRole === "superadmin" && session.role !== "superadmin") {
       return NextResponse.json(
-        { error: "Forbidden: Admins cannot delete super admin accounts." },
+        { error: "Only Super Admins can delete Super Admin accounts." },
         { status: 403 }
       );
     }

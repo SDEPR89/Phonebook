@@ -76,6 +76,10 @@ export default function AdminEditOfficerModal({
   const isReadOnly = viewerRole !== "superadmin" && systemRole === "superadmin";
 
   const handleDelete = async () => {
+    if (isProtectedTarget) {
+      setError("Only Super Admins can delete Super Admin accounts.");
+      return;
+    }
     setIsDeleting(true);
     setError(null);
     setInfoMessage(null);
@@ -109,6 +113,11 @@ export default function AdminEditOfficerModal({
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (isProtectedTarget) {
+      setError("Only Super Admins can modify Super Admin accounts.");
+      return;
+    }
 
     // Check if any fields changed
     const isUnchanged =
@@ -191,6 +200,12 @@ export default function AdminEditOfficerModal({
             Update user information or remove officer profile.
           </p>
         </div>
+
+        {isProtectedTarget && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-400">
+            🔒 Super Admin accounts can only be modified by Super Administrators.
+          </div>
+        )}
 
         {infoMessage && (
           <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">

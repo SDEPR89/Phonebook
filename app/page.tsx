@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SearchBar from "@/components/SearchBar";
 
@@ -19,21 +20,42 @@ export default function HomePage() {
 
   const [isNearCenter, setIsNearCenter] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  
+
   const [certs, setCerts] = useState<string[]>([]);
   const [isLoadingCerts, setIsLoadingCerts] = useState(true);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
-  // Check auth status matching the Header component
+  // Fetch user profile and authentication status
   useEffect(() => {
     fetch("/api/user/profile", { cache: "no-store" })
       .then((res) => {
-        setIsLoggedIn(res.ok);
+        if (res.ok) {
+          setIsLoggedIn(true);
+          return res.json();
+        } else {
+          setIsLoggedIn(false);
+          return null;
+        }
+      })
+      .then((data) => {
+        if (data) {
+          const extractedRole =
+            data.role ||
+            data.user?.role ||
+            data.roles?.[0] ||
+            null;
+
+          setUserRole(extractedRole);
+        } else {
+          setUserRole(null);
+        }
       })
       .catch((err) => {
         console.error("Failed to check auth status:", err);
         setIsLoggedIn(false);
+        setUserRole(null);
       })
       .finally(() => {
         setIsLoadingAuth(false);
@@ -68,7 +90,6 @@ export default function HomePage() {
       let centerX = window.innerWidth / 2;
       let centerY = window.innerHeight / 2;
 
-      // Track relative to search container position if available
       if (searchContainerRef.current) {
         const rect = searchContainerRef.current.getBoundingClientRect();
         centerX = rect.left + rect.width / 2;
@@ -95,6 +116,15 @@ export default function HomePage() {
   };
 
   const isLoggedOut = !isLoadingAuth && !isLoggedIn;
+
+  // Validate admin status
+  const normalizedRole = userRole
+    ? String(userRole).toLowerCase().replace(/[\s_-]+/g, "")
+    : "";
+
+  const isAdmin =
+    normalizedRole === "admin" ||
+    normalizedRole === "superadmin";
 
   return (
     <main
@@ -145,20 +175,20 @@ export default function HomePage() {
 
       {/* 3. Subtle Grid Pattern & Vignette */}
       <div className="pointer-events-none absolute inset-0 z-0">
-        <div 
+        <div
           className="absolute inset-0 opacity-25"
           style={{
             backgroundImage: `
               linear-gradient(to right, rgba(199, 210, 254, 0.18) 1px, transparent 1px),
               linear-gradient(to bottom, rgba(199, 210, 254, 0.18) 1px, transparent 1px)
             `,
-            backgroundSize: '36px 36px'
+            backgroundSize: "36px 36px",
           }}
         />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,#1c182e_85%)]" />
       </div>
 
-      {/* 4. Concentric Breathing Rings (Centered behind Search Area) */}
+      {/* 4. Concentric Breathing Rings */}
       <div
         className={`pointer-events-none absolute left-1/2 z-0 flex items-center justify-center transition-all duration-700 ease-out opacity-65 ${
           isLoggedOut ? "top-1/2" : "top-[215px]"
@@ -233,7 +263,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* CERT Logos Grid Block (Only renders when signed in) */}
+        {/* CERT Logos Grid Block */}
         {!isLoadingAuth && isLoggedIn && (
           <div className="w-full mt-4">
             <h2 className="mb-6 text-sm font-semibold uppercase tracking-wider text-indigo-100/90">
@@ -260,7 +290,7 @@ export default function HomePage() {
                     <div className="relative h-12 w-full flex items-center justify-center mb-2">
                       {!failedImages[cert] ? (
                         <Image
-                          src={`/cert/${cert.endsWith('.png') ? cert : `${cert}.png`}`}
+                          src={`/cert/${cert.endsWith(".png") ? cert : `${cert}.png`}`}
                           alt={cert}
                           width={100}
                           height={48}
@@ -282,6 +312,36 @@ export default function HomePage() {
             ) : (
               <p className="text-sm text-indigo-200/60">No CERTs found.</p>
             )}
+          </div>
+        )}
+
+        {/* 7. Non-sticky Admin Page Button (Positioned Below Content Blocks) */}
+        {!isLoadingAuth && isAdmin && (
+          <div className="flex w-full justify-end">
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 rounded-full border border-indigo-900/60 bg-slate-900/90 px-6 py-3 text-sm font-semibold text-indigo-100 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-indigo-950 hover:text-white hover:border-indigo-700/80 active:scale-95"
+            >
+              <svg
+                className="h-5 w-5 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span>Admin Page</span>
+            </Link>
           </div>
         )}
       </div>
