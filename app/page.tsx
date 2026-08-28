@@ -246,7 +246,7 @@ export default function HomePage() {
             className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-5xl transition-transform duration-500 ease-out origin-center ${isNearCenter ? "scale-105" : "scale-100"
               }`}
           >
-            สมุดโทรศัพท์ CERT
+            CERT Community Phonebook
           </h1>
 
           {/* Conditional Search Bar / Loading State */}

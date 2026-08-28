@@ -312,7 +312,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   {/* 24/7 Contact */}
                   <div className="space-y-2">
                     <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">
-                      24/7 Contact
+                      ช่องทางติดต่อ 24/7
                     </h3>
                     <p className="text-sm text-indigo-100 flex items-center gap-2">
                       <svg
@@ -351,7 +351,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   {/* Saraban Contact */}
                   <div className="space-y-2">
                     <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">
-                      Saraban Contact
+                      ช่องทางติดต่อสารบัญ
                     </h3>
                     {exactCert.sarabanContacts?.length > 0 ? (
                       exactCert.sarabanContacts.map((c: any, i: number) => (
@@ -446,11 +446,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
-            Results for{" "}
+            ผลลัพธ์การค้นหา {" "}
             <span className="text-indigo-200">&quot;{term}&quot;</span>
           </h1>
           <span className="rounded-full border border-indigo-200/30 bg-indigo-900/50 px-3.5 py-1 text-xs font-semibold text-indigo-100 shadow-inner backdrop-blur-md">
-            {results.length} Found
+            {results.length} ผลลัพธ์
           </span>
         </div>
 
@@ -471,16 +471,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       CERT
                     </th>
                     <th scope="col" className="px-6 py-4">
-                      Officer
+                      ชื่อ นามสกุล
                     </th>
                     <th scope="col" className="px-6 py-4">
-                      Email
+                      อีเมล
                     </th>
                     <th scope="col" className="px-6 py-4">
-                      Phone
+                      เบอร์ติดต่อ
                     </th>
                     <th scope="col" className="px-6 py-4">
-                      Role
+                      ตำแหน่ง
                     </th>
                   </tr>
                 </thead>
