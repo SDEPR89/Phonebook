@@ -228,22 +228,25 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {exactCert && (
           <div className="mb-10 overflow-hidden rounded-3xl border border-indigo-200/20 bg-white/5 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col md:flex-row p-8 md:p-10 gap-8 items-start">
-              {/* Logo */}
+              {/* Logo Block */}
               <div className="flex-shrink-0">
-                <div className="flex h-32 w-32 md:h-40 md:w-40 items-center justify-center rounded-2xl bg-white p-4 shadow-inner">
-                  {exactCert.logoUrl ? (
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={exactCert.logoUrl}
-                        alt={exactCert.shortName}
-                        fill
-                        unoptimized
-                        className="object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-4xl font-black text-indigo-900/40">CERT</span>
-                  )}
+                <div className="flex h-32 w-32 md:h-40 md:w-40 items-center justify-center rounded-full bg-white p-4 shadow-lg border border-white/60 overflow-hidden">
+                  <div className="relative h-full w-full flex items-center justify-center">
+                    <Image
+                      src={
+                        exactCert.logoUrl ||
+                        `/cert/${
+                          exactCert.shortName?.endsWith(".png")
+                            ? exactCert.shortName
+                            : `${exactCert.shortName}.png`
+                        }`
+                      }
+                      alt={exactCert.shortName || "CERT Logo"}
+                      fill
+                      unoptimized
+                      className="object-contain p-2"
+                    />
+                  </div>
                 </div>
               </div>
 
