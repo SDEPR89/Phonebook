@@ -1,27 +1,34 @@
 "use client";
 
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type Suggestion = {
   id: string;
   officerId?: string;
   text: string;
+  shortName?: string;
+  fullName?: string;
   profileUrl?: string | null;
+  type?: "officer" | "cert";
 };
 
 export default function SearchBar() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Debounce API calls as the user types
   useEffect(() => {
     const trimmed = query.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setSuggestions([]);
+      setIsOpen(false);
+      return;
+    }
 
     const timer = setTimeout(async () => {
       try {
@@ -40,6 +47,7 @@ export default function SearchBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -54,24 +62,51 @@ export default function SearchBar() {
   }, []);
 
   const handleSelectSuggestion = (item: Suggestion) => {
-    setQuery(item.text);
     setIsOpen(false);
 
-    // Pass the full UUID directly
-    const targetOfficerId = item.officerId || item.id;
-
-    if (targetOfficerId) {
-      router.push(`/officers/${targetOfficerId}`);
-    } else {
-      router.push(`/search?q=${encodeURIComponent(item.text)}`);
+    // If Certificate: prioritize shortName, fallback to text
+    if (item.type === "cert") {
+      const targetQuery = item.shortName || item.text;
+      setQuery(targetQuery);
+      router.push(`/search?q=${encodeURIComponent(targetQuery)}`);
+      return;
     }
+
+    // If Officer: navigate directly to their profile page
+    if (item.officerId) {
+      setQuery(item.text);
+      router.push(`/officers/${item.officerId}`);
+      return;
+    }
+
+    // Default search page fallback
+    setQuery(item.text);
+    router.push(`/search?q=${encodeURIComponent(item.text)}`);
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    const trimmed = query.trim();
+    if (!trimmed) return;
     setIsOpen(false);
-    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+
+    // 1. If an item in dropdown is actively selected via arrow keys
+    if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+      handleSelectSuggestion(suggestions[selectedIndex]);
+      return;
+    }
+
+    // 2. Check if text matches a cert (either shortName or fullName)
+    const matchedCert = suggestions.find(
+      (s) =>
+        s.type === "cert" &&
+        (s.text.toLowerCase() === trimmed.toLowerCase() ||
+          s.shortName?.toLowerCase() === trimmed.toLowerCase() ||
+          s.fullName?.toLowerCase() === trimmed.toLowerCase())
+    );
+
+    const finalQuery = matchedCert?.shortName || trimmed;
+    router.push(`/search?q=${encodeURIComponent(finalQuery)}`);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -80,12 +115,12 @@ export default function SearchBar() {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        prev < suggestions.length - 1 ? prev + 1 : 0,
+        prev < suggestions.length - 1 ? prev + 1 : 0
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        prev > 0 ? prev - 1 : suggestions.length - 1,
+        prev > 0 ? prev - 1 : suggestions.length - 1
       );
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
@@ -104,14 +139,7 @@ export default function SearchBar() {
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-            const val = e.target.value;
-            setQuery(val);
-            if (!val.trim()) {
-              setSuggestions([]);
-              setIsOpen(false);
-            }
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           onFocus={() =>
             query.trim() && suggestions.length > 0 && setIsOpen(true)
           }
@@ -142,7 +170,7 @@ export default function SearchBar() {
         </button>
       </form>
 
-      {/* Suggestion Dropdown */}
+      {/* Suggestion Dropdown List */}
       {isOpen && (
         <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-xl">
           {suggestions.map((item, index) => (
@@ -156,19 +184,43 @@ export default function SearchBar() {
                   : "text-slate-700 hover:bg-slate-50"
               }`}
             >
-              {item.profileUrl ? (
+              {item.type === "cert" ? (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                    />
+                  </svg>
+                </div>
+              ) : item.profileUrl ? (
                 <img
                   src={item.profileUrl}
                   alt={item.text}
-                  className="h-7 w-7 rounded-full border border-slate-200 object-cover"
+                  className="h-7 w-7 shrink-0 rounded-full border border-slate-200 object-cover"
                 />
               ) : (
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-bold text-slate-600">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-bold text-slate-600">
                   {item.text.charAt(0).toUpperCase()}
                 </div>
               )}
 
-              <span className="truncate">{item.text}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate">{item.text}</span>
+                {item.type === "cert" && (
+                  <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">
+                    {item.shortName ? `CERT: ${item.shortName}` : "CERTIFICATE"}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>
