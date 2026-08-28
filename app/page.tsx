@@ -1,12 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import SearchBar from "@/components/SearchBar";
 
+interface CertItem {
+  id?: string | number;
+  shortName?: string;
+  fullName?: string;
+  name?: string;
+  certName?: string;
+}
+
 export default function HomePage() {
+  const router = useRouter();
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   const [isNearCenter, setIsNearCenter] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  
+  const [certs, setCerts] = useState<string[]>([]);
+  const [isLoadingCerts, setIsLoadingCerts] = useState(true);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   // Check auth status matching the Header component
   useEffect(() => {
@@ -23,13 +40,40 @@ export default function HomePage() {
       });
   }, []);
 
+  // Fetch CERT list for logo cards
+  useEffect(() => {
+    setIsLoadingCerts(true);
+    fetch("/api/certs")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: (string | CertItem)[]) => {
+        const certNames = data
+          .map((c) =>
+            typeof c === "string"
+              ? c
+              : c.shortName || c.fullName || c.name || c.certName
+          )
+          .filter((name): name is string => Boolean(name));
+
+        setCerts(certNames);
+      })
+      .catch((err) => console.error("Failed to load certs:", err))
+      .finally(() => setIsLoadingCerts(false));
+  }, []);
+
   // Mouse distance detection for ring scaling effect
   useEffect(() => {
-    const THRESHOLD = 220; // Radius threshold in pixels from screen center
+    const THRESHOLD = 220;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
+      let centerX = window.innerWidth / 2;
+      let centerY = window.innerHeight / 2;
+
+      // Track relative to search container position if available
+      if (searchContainerRef.current) {
+        const rect = searchContainerRef.current.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2;
+      }
 
       const dx = e.clientX - centerX;
       const dy = e.clientY - centerY;
@@ -42,9 +86,23 @@ export default function HomePage() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const handleCertClick = (certName: string) => {
+    router.push(`/search?q=${encodeURIComponent(certName)}`);
+  };
+
+  const handleImageError = (certName: string) => {
+    setFailedImages((prev) => ({ ...prev, [certName]: true }));
+  };
+
+  const isLoggedOut = !isLoadingAuth && !isLoggedIn;
+
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#1c182e] px-4 overflow-hidden select-none text-slate-100">
-      {/* Shared Keyframes & Animations */}
+    <main
+      className={`relative flex min-h-screen flex-col items-center bg-[#1c182e] px-4 pb-16 overflow-x-hidden select-none text-slate-100 transition-all duration-500 ${
+        isLoggedOut ? "justify-center pt-0" : "justify-start pt-28"
+      }`}
+    >
+      {/* Keyframes & Animations */}
       <style>{`
         @keyframes idleBreathing {
           0% { transform: scale(0.9); }
@@ -100,30 +158,32 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,#1c182e_85%)]" />
       </div>
 
-      {/* 4. Concentric Breathing Rings */}
+      {/* 4. Concentric Breathing Rings (Centered behind Search Area) */}
       <div
-        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center transition-transform duration-700 ease-out opacity-60"
+        className={`pointer-events-none absolute left-1/2 z-0 flex items-center justify-center transition-all duration-700 ease-out opacity-65 ${
+          isLoggedOut ? "top-1/2" : "top-[215px]"
+        }`}
         style={{
-          transform: isNearCenter ? "scale(0.62)" : "scale(1)",
+          transform: `translate(-50%, -50%) ${isNearCenter ? "scale(0.62)" : "scale(1)"}`,
         }}
       >
         <div className="animate-idle-rings flex items-center justify-center">
           <div
-            className="h-[1500px] w-[1500px] shrink-0 rounded-full"
+            className="h-[1200px] w-[1200px] shrink-0 rounded-full"
             style={{
               background: `radial-gradient(
                 circle at center,
-                rgba(224, 231, 255, 0.8) 0px,
-                rgba(199, 210, 254, 0.7) 90px,
-                rgba(165, 180, 252, 0.6) 90px,
-                rgba(129, 140, 248, 0.5) 180px,
-                rgba(99, 102, 241, 0.4) 180px,
-                rgba(79, 70, 229, 0.35) 280px,
-                rgba(67, 56, 202, 0.3) 280px,
-                rgba(55, 48, 163, 0.25) 400px,
-                rgba(49, 46, 129, 0.2) 400px,
-                rgba(40, 34, 64, 0.15) 540px,
-                rgba(28, 24, 46, 0.1) 700px,
+                rgba(255, 255, 255, 0.85) 0px,
+                rgba(224, 231, 255, 0.75) 90px,
+                rgba(199, 210, 254, 0.65) 90px,
+                rgba(165, 180, 252, 0.55) 180px,
+                rgba(129, 140, 248, 0.45) 180px,
+                rgba(99, 102, 241, 0.35) 280px,
+                rgba(79, 70, 229, 0.28) 280px,
+                rgba(67, 56, 202, 0.2) 400px,
+                rgba(49, 46, 129, 0.15) 400px,
+                rgba(40, 34, 64, 0.1) 540px,
+                rgba(28, 24, 46, 0.05) 700px,
                 transparent 540px
               )`,
             }}
@@ -133,37 +193,96 @@ export default function HomePage() {
 
       {/* 5. Central Airbrush Spotlight Overlay */}
       <div
-        className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ease-out ${
+        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ease-out ${
+          isLoggedOut ? "top-1/2" : "top-[215px]"
+        } ${
           isNearCenter
             ? "h-[280px] w-[280px] opacity-95 blur-md"
             : "h-[220px] w-[220px] opacity-60 blur-2xl"
         }`}
         style={{
           background:
-            "radial-gradient(circle, rgba(199, 210, 254, 0.5) 0%, rgba(129, 140, 248, 0.3) 45%, rgba(79, 70, 229, 0.1) 70%, transparent 90%)",
+            "radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(199, 210, 254, 0.4) 45%, rgba(129, 140, 248, 0.15) 70%, transparent 90%)",
           mixBlendMode: "screen",
         }}
       />
 
       {/* 6. Foreground Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center gap-6 text-center">
-        <h1
-          className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-4xl transition-transform duration-500 ease-out origin-center ${
-            isNearCenter ? "scale-110" : "scale-100"
-          }`}
-        >
-          CERT Community Phonebook
-        </h1>
+      <div className="relative z-10 flex w-full max-w-6xl flex-col items-center gap-10 text-center">
+        {/* Header Block */}
+        <div className="flex flex-col items-center gap-6" ref={searchContainerRef}>
+          <h1
+            className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-5xl transition-transform duration-500 ease-out origin-center ${
+              isNearCenter ? "scale-105" : "scale-100"
+            }`}
+          >
+            CERT Community Phonebook
+          </h1>
 
-        {/* Conditional Search Bar / Loading State */}
-        {isLoadingAuth ? (
-          <div className="h-12 w-80 max-w-md animate-pulse rounded-full bg-indigo-200/20 backdrop-blur-md" />
-        ) : isLoggedIn ? (
-          <SearchBar />
-        ) : (
-          <p className="max-w-md rounded-2xl border border-indigo-200/20 bg-indigo-950/40 px-6 py-3 text-sm font-medium text-indigo-200/80 backdrop-blur-md shadow-lg">
-            Please sign in to search the community phonebook.
-          </p>
+          {/* Conditional Search Bar / Loading State */}
+          {isLoadingAuth ? (
+            <div className="h-12 w-80 max-w-md animate-pulse rounded-full bg-white/20 backdrop-blur-md" />
+          ) : isLoggedIn ? (
+            <div className="w-full max-w-md flex justify-center">
+              <SearchBar />
+            </div>
+          ) : (
+            <p className="max-w-md rounded-2xl border border-white/40 bg-white/90 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur-md shadow-lg">
+              Please sign in to search the community phonebook.
+            </p>
+          )}
+        </div>
+
+        {/* CERT Logos Grid Block (Only renders when signed in) */}
+        {!isLoadingAuth && isLoggedIn && (
+          <div className="w-full mt-4">
+            <h2 className="mb-6 text-sm font-semibold uppercase tracking-wider text-indigo-100/90">
+              Select a CERT Team
+            </h2>
+
+            {isLoadingCerts ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {Array.from({ length: 12 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="h-28 rounded-2xl bg-white/80 border border-white/50 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : certs.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {certs.map((cert) => (
+                  <button
+                    key={cert}
+                    onClick={() => handleCertClick(cert)}
+                    className="group relative flex flex-col items-center justify-center p-4 rounded-2xl border border-white/60 bg-white/90 backdrop-blur-md shadow-md transition-all duration-300 hover:scale-105 hover:bg-white hover:border-white hover:shadow-xl hover:shadow-indigo-500/10 min-h-[110px]"
+                  >
+                    <div className="relative h-12 w-full flex items-center justify-center mb-2">
+                      {!failedImages[cert] ? (
+                        <Image
+                          src={`/cert/${cert.endsWith('.png') ? cert : `${cert}.png`}`}
+                          alt={cert}
+                          width={100}
+                          height={48}
+                          onError={() => handleImageError(cert)}
+                          className="max-h-full max-w-full object-contain filter drop-shadow transition-transform duration-300 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-900 font-bold text-sm">
+                          {cert.substring(0, 3)}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-semibold text-slate-800 group-hover:text-indigo-950 transition-colors truncate w-full">
+                      {cert}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-indigo-200/60">No CERTs found.</p>
+            )}
+          </div>
         )}
       </div>
     </main>
