@@ -10,10 +10,12 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:import-certs": "tsx scripts/import-certs.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "csv-parse": "^7.0.2",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^13.1.1",

@@ -75,7 +75,7 @@ export default function Header() {
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => {
           const certNames = data
-            .map((c: any) => (typeof c === "string" ? c : c.name || c.certName))
+            .map((c: any) => (typeof c === "string" ? c : c.shortName || c.name || c.certName))
             .filter(Boolean);
           setCertList(certNames);
         })
