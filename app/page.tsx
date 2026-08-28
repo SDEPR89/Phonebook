@@ -267,7 +267,7 @@ export default function HomePage() {
         {!isLoadingAuth && isLoggedIn && (
           <div className="w-full mt-4">
             <h2 className="mb-6 text-sm font-semibold uppercase tracking-wider text-indigo-100/90">
-              Select a CERT Team
+              ค้นหาด้วย CERT
             </h2>
 
             {isLoadingCerts ? (
@@ -335,7 +335,7 @@ export default function HomePage() {
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
-            <span>Contact</span>
+            <span>ช่องทางติดต่อ</span>
           </Link>
 
           {/* Admin Page Button */}
@@ -362,7 +362,7 @@ export default function HomePage() {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span>Admin Page</span>
+              <span>หน้าแอดมิน</span>
             </Link>
           ) : (
             <div /> /* Empty div placeholder keeps Contact aligned left if Admin is hidden */

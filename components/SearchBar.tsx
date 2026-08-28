@@ -116,7 +116,7 @@ export default function SearchBar() {
             query.trim() && suggestions.length > 0 && setIsOpen(true)
           }
           onKeyDown={handleKeyDown}
-          placeholder="Search by name, phone, email, cert..."
+          placeholder="ค้นหาด้วย ชื่อ, เบอร์ติดต่อ, อีเมล, CERT"
           className="w-full bg-transparent px-3 py-1.5 text-sm text-slate-900 placeholder-slate-400 outline-none"
           autoFocus
         />

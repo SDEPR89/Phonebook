@@ -50,8 +50,8 @@ export default function ContactPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">Direct Email</h3>
-              <p className="text-xs text-indigo-200/70">General inquiries</p>
+              <h3 className="text-sm font-semibold text-white">ที่อยู่อีเมล</h3>
+              <p className="text-xs text-indigo-200/70">General Inquiry</p>
             </div>
           </div>
           <div className="mt-6">
@@ -71,7 +71,7 @@ export default function ContactPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">Main Office</h3>
+              <h3 className="text-sm font-semibold text-white">ที่ตั้ง</h3>
               <p className="text-xs text-indigo-200/70">Headquarters</p>
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function ContactPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">Operating Hours</h3>
+              <h3 className="text-sm font-semibold text-white">เวลาทำการ</h3>
               <p className="text-xs text-indigo-200/70">PST Timezone</p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
       {/* Lowkey Credits Section */}
       <footer className="relative z-10 mt-16 w-full max-w-4xl border-t border-white/10 pt-8 text-center">
         <p className="text-xs font-semibold uppercase tracking-widest text-indigo-300/50">
-          Created By
+          พัฒนาโดย
         </p>
 
         {/* 3-Person Team Grid */}
