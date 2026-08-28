@@ -35,7 +35,6 @@ export default async function AdminCertsPage() {
   let certs: AdminCertItem[] = [];
   let areas: { id: string; name: string }[] = [];
   let units: { id: string; name: string }[] = [];
-  let allOfficers: { id: string; name: string }[] = [];
   try {
     areas = await db.query.areas.findMany({
       orderBy: (areas, { asc }) => [asc(areas.name)],
@@ -60,11 +59,6 @@ export default async function AdminCertsPage() {
       }
     }
 
-    const dbOfficers = await db.query.officers.findMany({
-      orderBy: (officers, { asc }) => [asc(officers.name)],
-    });
-    allOfficers = dbOfficers.map(o => ({ id: o.id, name: o.name }));
-
     const dbCerts = await db.query.certs.findMany({
       orderBy: (certs, { asc }) => [asc(certs.shortName)],
       with: {
@@ -76,7 +70,7 @@ export default async function AdminCertsPage() {
         },
       }
     });
-    
+
     certs = dbCerts.map((cert) => {
       // Translate old combined unit IDs to individual base unit IDs
       const translatedUnitIds = new Set<string>();
@@ -105,14 +99,14 @@ export default async function AdminCertsPage() {
     <main className="min-h-screen bg-[#070A12] p-6 text-slate-100 md:p-10">
       <div className="mx-auto max-w-5xl">
         {/* Back Link */}
-        <Link 
+        <Link
           href="/admin"
           className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
         >
           <span>←</span> Back to Admin Dashboard
         </Link>
-        
-        <AdminCertList initialCerts={certs} areas={areas} units={units} allOfficers={allOfficers} />
+
+        <AdminCertList initialCerts={certs} areas={areas} units={units} />
       </div>
     </main>
   );

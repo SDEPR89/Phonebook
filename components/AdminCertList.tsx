@@ -11,7 +11,6 @@ interface AdminCertListProps {
   initialCerts?: AdminCertItem[];
   areas?: { id: string; name: string }[];
   units?: { id: string; name: string }[];
-  allOfficers?: { id: string; name: string }[];
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -41,14 +40,14 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   },
 };
 
-export default function AdminCertList({ initialCerts = [], areas = [], units = [], allOfficers = [] }: AdminCertListProps) {
+export default function AdminCertList({ initialCerts = [], areas = [], units = [] }: AdminCertListProps) {
   const router = useRouter();
 
   const [selectedCert, setSelectedCert] = useState<AdminCertItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  
+
   const handleEdit = (cert: AdminCertItem) => {
     setSelectedCert(cert);
     setIsEditModalOpen(true);
@@ -82,7 +81,7 @@ export default function AdminCertList({ initialCerts = [], areas = [], units = [
           initialCerts.map((cert) => {
             const statusInfo = STATUS_LABELS[cert.establishmentStatus] || STATUS_LABELS.not_started;
             const logoSrc = cert.logoUrl || `/cert/${cert.shortName.endsWith(".png") ? cert.shortName : `${cert.shortName}.png`}`;
-            
+
             return (
               <div
                 key={cert.id}
@@ -91,14 +90,14 @@ export default function AdminCertList({ initialCerts = [], areas = [], units = [
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-16 items-center justify-center rounded-lg bg-white/5 overflow-hidden p-1">
                     {!failedImages[cert.id] ? (
-                       <Image
-                         src={logoSrc}
-                         alt={cert.shortName}
-                         width={48}
-                         height={48}
-                         className="object-contain"
-                         onError={() => handleImageError(cert.id)}
-                       />
+                      <Image
+                        src={logoSrc}
+                        alt={cert.shortName}
+                        width={48}
+                        height={48}
+                        className="object-contain"
+                        onError={() => handleImageError(cert.id)}
+                      />
                     ) : (
                       <span className="text-xs font-bold text-slate-500">IMG</span>
                     )}

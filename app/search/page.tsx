@@ -228,9 +228,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {exactCert && (
           <div className="mb-10 overflow-hidden rounded-3xl border border-indigo-200/20 bg-white/5 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col md:flex-row p-8 md:p-10 gap-8 items-start">
-              {/* Logo Block */}
-              <div className="flex-shrink-0">
-                <div className="flex h-32 w-32 md:h-40 md:w-40 items-center justify-center rounded-full bg-white p-4 shadow-lg border border-white/60 overflow-hidden">
+              {/* Logo Block & Coordinators */}
+              <div className="flex-shrink-0 flex flex-col gap-6 w-full md:w-48 lg:w-56 items-center md:items-stretch">
+                <div className="flex h-32 w-32 md:h-40 md:w-40 items-center justify-center rounded-full bg-white p-4 shadow-lg border border-white/60 overflow-hidden mx-auto">
                   <div className="relative h-full w-full flex items-center justify-center">
                     <Image
                       src={
@@ -248,6 +248,41 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     />
                   </div>
                 </div>
+
+                {/* Coordinators Section */}
+                {results.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-xs font-bold text-indigo-300/80 uppercase tracking-widest text-center">
+                      ผู้ประสานงาน
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {results.map((r) => {
+                        const profileHref = `/officers/${r.officerId}${
+                          term ? `?q=${encodeURIComponent(term)}` : ""
+                        }`;
+                        return (
+                          <Link
+                            key={r.officerId}
+                            href={profileHref}
+                            className="group block bg-white/5 hover:bg-white/10 transition-all border border-indigo-200/10 hover:border-indigo-300/30 rounded-xl p-3 shadow-sm hover:shadow-md"
+                          >
+                            <p className="font-semibold text-indigo-50 group-hover:text-white transition-colors truncate text-sm">
+                              {r.name}
+                            </p>
+                            {r.phones.length > 0 && (
+                              <p className="text-xs text-indigo-200 mt-1 flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                {r.phones[0]}
+                              </p>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Info */}

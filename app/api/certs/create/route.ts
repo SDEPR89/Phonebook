@@ -16,10 +16,10 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
-    
+
     const shortName = formData.get("shortName") as string;
     const fullName = formData.get("fullName") as string;
-    
+
     if (!shortName || !fullName) {
       return NextResponse.json(
         { error: "Short Name and Full Name are required." },
@@ -32,12 +32,7 @@ export async function POST(req: Request) {
     const sarabanContactsRaw = formData.get("sarabanContacts") as string;
     let sarabanContacts: any[] = [];
     if (sarabanContactsRaw) {
-      try { sarabanContacts = JSON.parse(sarabanContactsRaw); } catch(e) {}
-    }
-    const coordinatorsRaw = formData.get("coordinators") as string;
-    let coordinators: string[] = [];
-    if (coordinatorsRaw) {
-      try { coordinators = JSON.parse(coordinatorsRaw); } catch(e) {}
+      try { sarabanContacts = JSON.parse(sarabanContactsRaw); } catch (e) { }
     }
     const contact247Email = (formData.get("contact247Email") as string) || "";
     const contact247Phone = (formData.get("contact247Phone") as string) || "";
@@ -46,7 +41,7 @@ export async function POST(req: Request) {
     const unitsRaw = formData.get("units") as string;
     let units: string[] = [];
     if (unitsRaw) {
-      try { units = JSON.parse(unitsRaw); } catch(e) {}
+      try { units = JSON.parse(unitsRaw); } catch (e) { }
     }
     const logoFile = formData.get("logo") as File | null;
 
@@ -81,7 +76,6 @@ export async function POST(req: Request) {
       location: location || null,
       sarabanEmail: sarabanEmail || null,
       sarabanContacts: sarabanContacts,
-      coordinators: coordinators,
       contact247Email: contact247Email || null,
       contact247Phone: contact247Phone || null,
       establishmentStatus,
