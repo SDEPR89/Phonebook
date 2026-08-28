@@ -10,6 +10,30 @@ type CreateOfficerModalProps = {
   viewerRole?: string;
 };
 
+const DEFAULT_CERTS = [
+  "THAICERT",
+  "EnergyCERT",
+  "FDA-CERT",
+  "TCM-CERT",
+  "TA-CERT",
+  "Railway CERT",
+  "MODCSIRT",
+  "THE-CSIRT",
+  "Health CERT",
+  "NR-CERT",
+  "BORA CERT",
+  "TB-CERT",
+  "DOL-CERT",
+  "TCS CERT",
+  "HSS-CERT",
+  "MOF-CSIRT",
+  "CCIB-CERT",
+  "TI-CERT",
+  "COPCSIRT",
+  "DTC CERT",
+  "RMUT CERT",
+];
+
 export default function AdminCreateOfficerModal({
   isOpen,
   onClose,
@@ -55,6 +79,21 @@ export default function AdminCreateOfficerModal({
 
   useEffect(() => {
     if (isOpen) {
+      setName("");
+      setEmail("");
+      setPhone("");
+      setCert("");
+      setRole("");
+      setSystemRole("officer");
+      setPassword("");
+      setShowPassword(true);
+      setError(null);
+      setAvatarFile(null);
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarPreview(null);
+
       const fetchOptions = async () => {
         setIsLoadingOptions(true);
         try {
@@ -62,13 +101,41 @@ export default function AdminCreateOfficerModal({
             fetch("/api/certs"),
             fetch("/api/roles"),
           ]);
+          let mappedCerts: { id: string; name: string }[] = [];
           if (certsRes.ok) {
             const data = await certsRes.json();
-            setCertOptions(Array.isArray(data) ? data : data.certs || []);
+            const certList: any[] = Array.isArray(data) ? data : data.certs || [];
+            
+            mappedCerts = certList
+              .map((item) => ({
+                id: String(item.id || item.shortName || item.short_name || ""),
+                name: (item.shortName || item.short_name || item.fullName || item.name || "").trim(),
+              }))
+              .filter((item) => item.name && item.name !== "Select Cert Name");
           }
+
+          if (mappedCerts.length === 0) {
+            mappedCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
+          }
+
+          setCertOptions(mappedCerts);
+
           if (rolesRes.ok) {
             const data = await rolesRes.json();
-            setRoleOptions(Array.isArray(data) ? data : data.roles || []);
+            const roleList: any[] = Array.isArray(data) ? data : data.roles || [];
+            
+            const uniqueRoles = new Map<string, { id: string; name: string }>();
+            roleList.forEach((item) => {
+              const rName = (item.name || "").trim();
+              if (rName && !uniqueRoles.has(rName.toLowerCase())) {
+                uniqueRoles.set(rName.toLowerCase(), {
+                  id: String(item.id || rName),
+                  name: rName,
+                });
+              }
+            });
+
+            setRoleOptions(Array.from(uniqueRoles.values()));
           }
         } catch (err) {
           console.error("Failed to fetch options", err);
@@ -80,28 +147,44 @@ export default function AdminCreateOfficerModal({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
   if (!isOpen) return null;
 
   const handleFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       setAvatarFile(file);
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
       setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("Name, Email, and Password are required fields.");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("phone", phone);
-    formData.append("cert", cert);
-    formData.append("role", role);
+    formData.append("name", name.trim());
+    formData.append("email", email.trim());
+    formData.append("phone", phone.trim());
+    formData.append("cert", cert.trim());
+    formData.append("role", role.trim());
     formData.append("systemRole", systemRole);
-    formData.append("password", password);
+    formData.append("password", password.trim());
     if (avatarFile) {
       formData.append("avatar", avatarFile);
     }
@@ -111,6 +194,13 @@ export default function AdminCreateOfficerModal({
         method: "POST",
         body: formData,
       });
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        // Response is non-JSON
+      }
 
       if (res.ok) {
         // Reset form
@@ -122,12 +212,14 @@ export default function AdminCreateOfficerModal({
         setSystemRole("officer");
         setPassword("");
         setAvatarFile(null);
+        if (avatarPreview && avatarPreview.startsWith("blob:")) {
+          URL.revokeObjectURL(avatarPreview);
+        }
         setAvatarPreview(null);
         onSuccess();
         onClose();
       } else {
-        const data = await res.json();
-        setError(data.error || "Failed to create officer.");
+        setError(data.error || `Failed to create officer (${res.status}).`);
       }
     } catch (err) {
       console.error(err);
@@ -142,7 +234,8 @@ export default function AdminCreateOfficerModal({
       <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0B0F17] p-6 shadow-2xl text-slate-100">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-white"
+          disabled={isSaving}
+          className="absolute top-5 right-5 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ✕
         </button>

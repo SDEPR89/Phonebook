@@ -168,15 +168,14 @@ export default function AdminUserList({
         )}
       </div>
 
-      {/* Navigation Link: Activity History */}
-      <div className="fixed bottom-8 left-8 z-50 flex flex-col gap-3">
+      {/* Navigation Links: Activity History & Manage CERTs */}
+      <div className="fixed bottom-8 left-8 z-50 flex flex-col gap-2.5">
         <Link
           href="/admin/history"
           className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/90 px-4 py-3 text-xs font-semibold text-slate-300 shadow-xl backdrop-blur-md transition hover:scale-105 hover:border-slate-700 hover:bg-slate-800 hover:text-white active:scale-95 cursor-pointer"
         >
           <span>📜</span> View Activity History
         </Link>
-        
         {viewerRole === "superadmin" && (
           <Link
             href="/admin/certs"

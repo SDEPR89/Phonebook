@@ -13,6 +13,30 @@ type AdminEditOfficerModalProps = {
   viewerRole?: string;
 };
 
+const DEFAULT_CERTS = [
+  "THAICERT",
+  "EnergyCERT",
+  "FDA-CERT",
+  "TCM-CERT",
+  "TA-CERT",
+  "Railway CERT",
+  "MODCSIRT",
+  "THE-CSIRT",
+  "Health CERT",
+  "NR-CERT",
+  "BORA CERT",
+  "TB-CERT",
+  "DOL-CERT",
+  "TCS CERT",
+  "HSS-CERT",
+  "MOF-CSIRT",
+  "CCIB-CERT",
+  "TI-CERT",
+  "COPCSIRT",
+  "DTC CERT",
+  "RMUT CERT",
+];
+
 export default function AdminEditOfficerModal({
   officer,
   isOpen,
@@ -30,8 +54,9 @@ export default function AdminEditOfficerModal({
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    officer.profileUrl || null,
+    officer.profileUrl || null
   );
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -46,6 +71,20 @@ export default function AdminEditOfficerModal({
 
   useEffect(() => {
     if (isOpen) {
+      setName(officer.name || "");
+      setEmail(officer.email || "");
+      setCertName(officer.certName || "");
+      setRoleName(officer.roleName || "");
+      setSystemRole(officer.systemRole || "officer");
+      setAvatarFile(null);
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarPreview(officer.profileUrl || null);
+      setError(null);
+      setInfoMessage(null);
+      setShowConfirmDelete(false);
+
       const fetchOptions = async () => {
         setIsLoadingOptions(true);
         try {
@@ -53,13 +92,60 @@ export default function AdminEditOfficerModal({
             fetch("/api/certs"),
             fetch("/api/roles"),
           ]);
+          
+          let mappedCerts: { id: string; name: string }[] = [];
+          
           if (certsRes.ok) {
             const data = await certsRes.json();
-            setCertOptions(Array.isArray(data) ? data : data.certs || []);
+            const certList: any[] = Array.isArray(data) ? data : data.certs || [];
+            
+            mappedCerts = certList
+              .map((item) => ({
+                id: String(item.id || item.shortName || item.short_name || ""),
+                name: (item.shortName || item.short_name || item.fullName || item.name || "").trim(),
+              }))
+              .filter((item) => item.name && item.name !== "Select Cert Name");
           }
+
+          if (mappedCerts.length === 0) {
+            mappedCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
+          }
+
+          if (officer.certName && officer.certName.trim()) {
+            const current = officer.certName.trim();
+            if (!mappedCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+              mappedCerts.unshift({ id: "curr-" + current, name: current });
+            }
+          }
+
+          setCertOptions(mappedCerts);
+
           if (rolesRes.ok) {
             const data = await rolesRes.json();
-            setRoleOptions(Array.isArray(data) ? data : data.roles || []);
+            const roleList: any[] = Array.isArray(data) ? data : data.roles || [];
+            
+            const uniqueRoles = new Map<string, { id: string; name: string }>();
+            roleList.forEach((item) => {
+              const rName = (item.name || "").trim();
+              if (rName && !uniqueRoles.has(rName.toLowerCase())) {
+                uniqueRoles.set(rName.toLowerCase(), {
+                  id: String(item.id || rName),
+                  name: rName,
+                });
+              }
+            });
+
+            if (officer.roleName && officer.roleName.trim()) {
+              const current = officer.roleName.trim();
+              if (!uniqueRoles.has(current.toLowerCase())) {
+                uniqueRoles.set(current.toLowerCase(), {
+                  id: "curr-" + current,
+                  name: current,
+                });
+              }
+            }
+
+            setRoleOptions(Array.from(uniqueRoles.values()));
           }
         } catch (err) {
           console.error("Failed to fetch certs", err);
@@ -69,12 +155,31 @@ export default function AdminEditOfficerModal({
       };
       fetchOptions();
     }
-  }, [isOpen]);
+  }, [isOpen, officer]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   if (!isOpen) return null;
 
-  const isReadOnly = viewerRole !== "superadmin" && systemRole === "superadmin";
-  const isProtectedTarget = viewerRole !== "superadmin" && systemRole === "superadmin";
+  const isProtectedTarget =
+    (officer.systemRole === "superadmin" || officer.email === "admin@example.com") &&
+    viewerRole !== "superadmin";
+
+  const handleFile = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      setAvatarFile(file);
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleDelete = async () => {
     if (isProtectedTarget) {
@@ -92,6 +197,13 @@ export default function AdminEditOfficerModal({
         body: JSON.stringify({ officerId: officer.officerId }),
       });
 
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        // Response is non-JSON
+      }
+
       if (res.ok) {
         startTransition(() => {
           router.refresh();
@@ -101,8 +213,6 @@ export default function AdminEditOfficerModal({
         return;
       }
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
       setError(data.error || `Failed to delete officer (${res.status})`);
     } catch (err) {
       console.error(err);
@@ -117,6 +227,11 @@ export default function AdminEditOfficerModal({
 
     if (isProtectedTarget) {
       setError("Only Super Admins can modify Super Admin accounts.");
+      return;
+    }
+
+    if (!name.trim() || !email.trim()) {
+      setError("Name and Email are required fields.");
       return;
     }
 
@@ -140,11 +255,14 @@ export default function AdminEditOfficerModal({
 
     const formData = new FormData();
     formData.append("officerId", officer.officerId);
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("certName", certName);
-    formData.append("roleName", roleName);
-    formData.append("systemRole", systemRole);
+    formData.append("name", name.trim());
+    formData.append("email", email.trim());
+    formData.append("certName", certName.trim());
+    formData.append("roleName", roleName.trim());
+    // Only send systemRole if viewer is superadmin to prevent permission rejection for admins
+    if (viewerRole === "superadmin") {
+      formData.append("systemRole", systemRole);
+    }
     if (avatarFile) {
       formData.append("avatar", avatarFile);
     }
@@ -155,6 +273,13 @@ export default function AdminEditOfficerModal({
         body: formData,
       });
 
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        // Response is non-JSON
+      }
+
       if (res.ok) {
         startTransition(() => {
           router.refresh();
@@ -162,19 +287,17 @@ export default function AdminEditOfficerModal({
 
         onSuccess({
           officerId: officer.officerId,
-          name,
-          email,
-          certName,
-          roleName,
-          systemRole,
+          name: name.trim(),
+          email: email.trim(),
+          certName: certName.trim(),
+          roleName: roleName.trim(),
+          systemRole: viewerRole === "superadmin" ? systemRole : officer.systemRole,
           profileUrl: avatarPreview || officer.profileUrl,
         });
         onClose();
         return;
       }
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
       setError(data.error || `Failed to update officer (${res.status})`);
     } catch (err) {
       console.error(err);
@@ -190,7 +313,8 @@ export default function AdminEditOfficerModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-white"
+          disabled={isSaving || isDeleting}
+          className="absolute top-5 right-5 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ✕
         </button>
@@ -226,22 +350,37 @@ export default function AdminEditOfficerModal({
               Profile Avatar
             </label>
             <div
-              onClick={() => {
-                if (!isReadOnly) fileInputRef.current?.click();
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!isProtectedTarget) setIsDragging(true);
               }}
-              className={`flex items-center justify-between rounded-xl border-2 border-dashed border-slate-800 bg-slate-950/60 p-3 ${isReadOnly ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-slate-700"
-                }`}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                if (!isProtectedTarget && e.dataTransfer.files?.[0]) {
+                  handleFile(e.dataTransfer.files[0]);
+                }
+              }}
+              onClick={() => !isProtectedTarget && fileInputRef.current?.click()}
+              className={`flex items-center justify-between rounded-xl border-2 border-dashed p-3 transition ${
+                isDragging
+                  ? "border-blue-500 bg-blue-500/10"
+                  : isProtectedTarget
+                  ? "border-slate-800 bg-slate-950/60 cursor-not-allowed opacity-60"
+                  : "border-slate-800 bg-slate-950/60 cursor-pointer hover:border-slate-700"
+              }`}
             >
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                disabled={isProtectedTarget}
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    setAvatarFile(file);
-                    setAvatarPreview(URL.createObjectURL(file));
+                    handleFile(file);
                   }
                 }}
               />
@@ -276,13 +415,10 @@ export default function AdminEditOfficerModal({
             <input
               type="text"
               required
-              disabled={isReadOnly}
+              disabled={isProtectedTarget}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full rounded-xl border border-slate-800 px-3.5 py-2 text-sm outline-none ${isReadOnly
-                ? "bg-slate-900/60 text-slate-400 cursor-not-allowed"
-                : "bg-slate-950 text-slate-100 focus:border-blue-500"
-                }`}
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -293,13 +429,10 @@ export default function AdminEditOfficerModal({
             <input
               type="email"
               required
-              disabled={isReadOnly}
+              disabled={isProtectedTarget}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full rounded-xl border border-slate-800 px-3.5 py-2 text-sm outline-none ${isReadOnly
-                ? "bg-slate-900/60 text-slate-400 cursor-not-allowed"
-                : "bg-slate-950 text-slate-100 focus:border-blue-500"
-                }`}
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -312,7 +445,7 @@ export default function AdminEditOfficerModal({
               value={certName}
               onChange={setCertName}
               placeholder="Select Cert Name"
-              disabled={isLoadingOptions || isReadOnly}
+              disabled={isLoadingOptions || isProtectedTarget}
             />
           </div>
 
@@ -325,7 +458,7 @@ export default function AdminEditOfficerModal({
               value={roleName}
               onChange={setRoleName}
               placeholder="Select Role Name"
-              disabled={isLoadingOptions || isReadOnly}
+              disabled={isLoadingOptions || isProtectedTarget}
             />
           </div>
 
@@ -337,10 +470,11 @@ export default function AdminEditOfficerModal({
             {viewerRole === "superadmin" ? (
               <select
                 value={systemRole}
+                disabled={isProtectedTarget}
                 onChange={(e) => setSystemRole(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <option value="officer">Officer</option>
+                <option value="officer">User (Officer)</option>
                 <option value="admin">Administrator</option>
                 <option value="superadmin">Super Administrator</option>
               </select>
@@ -352,8 +486,8 @@ export default function AdminEditOfficerModal({
                   systemRole === "superadmin"
                     ? "Super Administrator"
                     : systemRole === "admin"
-                      ? "Administrator"
-                      : "Officer"
+                    ? "Administrator"
+                    : "User (Officer)"
                 }
                 className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3.5 py-2 text-sm text-slate-400 cursor-not-allowed"
               />
@@ -362,68 +496,54 @@ export default function AdminEditOfficerModal({
 
           <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
             <div>
-              {!isReadOnly && (
-                showConfirmDelete ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-400">Are you sure?</span>
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={isDeleting || isSaving}
-                      className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
-                    >
-                      {isDeleting ? "..." : "Yes"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmDelete(false)}
-                      disabled={isDeleting || isSaving}
-                      className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
-                    >
-                      No
-                    </button>
-                  </div>
-                ) : (
+              {showConfirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-400">Are you sure?</span>
                   <button
                     type="button"
-                    onClick={() => setShowConfirmDelete(true)}
-                    disabled={isDeleting || isSaving}
-                    className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                    onClick={handleDelete}
+                    disabled={isDeleting || isSaving || isProtectedTarget}
+                    className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Delete
+                    {isDeleting ? "..." : "Yes"}
                   </button>
-                )
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmDelete(false)}
+                    disabled={isDeleting || isSaving}
+                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmDelete(true)}
+                  disabled={isDeleting || isSaving || isProtectedTarget}
+                  className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Delete
+                </button>
               )}
             </div>
 
             <div className="flex gap-3">
-              {isReadOnly ? (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-                >
-                  Close
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isDeleting || isSaving}
-                    className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || isDeleting}
-                    className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
-                  >
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting || isSaving}
+                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting || isProtectedTarget}
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </div>
         </form>
