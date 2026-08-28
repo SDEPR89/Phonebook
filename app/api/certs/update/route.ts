@@ -24,6 +24,11 @@ export async function POST(req: Request) {
     if (sarabanContactsRaw) {
       try { sarabanContacts = JSON.parse(sarabanContactsRaw); } catch(e) {}
     }
+    const coordinatorsRaw = formData.get("coordinators") as string;
+    let coordinators: string[] = [];
+    if (coordinatorsRaw) {
+      try { coordinators = JSON.parse(coordinatorsRaw); } catch(e) {}
+    }
     const contact247Email = (formData.get("contact247Email") as string) || "";
     const contact247Phone = (formData.get("contact247Phone") as string) || "";
     const establishmentStatus = (formData.get("establishmentStatus") as string) || "";
@@ -71,6 +76,7 @@ export async function POST(req: Request) {
     if ((currentCert.location || "") !== location) changes.push({ field: "Location", old: currentCert.location || "", new: location });
     if ((currentCert.sarabanEmail || "") !== sarabanEmail) changes.push({ field: "Saraban Email", old: currentCert.sarabanEmail || "", new: sarabanEmail });
     if (JSON.stringify(currentCert.sarabanContacts || []) !== JSON.stringify(sarabanContacts)) changes.push({ field: "Saraban Contacts", old: JSON.stringify(currentCert.sarabanContacts || []), new: JSON.stringify(sarabanContacts) });
+    if (JSON.stringify(currentCert.coordinators || []) !== JSON.stringify(coordinators)) changes.push({ field: "Coordinators", old: JSON.stringify(currentCert.coordinators || []), new: JSON.stringify(coordinators) });
     if ((currentCert.contact247Email || "") !== contact247Email) changes.push({ field: "24/7 Email", old: currentCert.contact247Email || "", new: contact247Email });
     if ((currentCert.contact247Phone || "") !== contact247Phone) changes.push({ field: "24/7 Phone", old: currentCert.contact247Phone || "", new: contact247Phone });
     if ((currentCert.establishmentStatus || "not_started") !== establishmentStatus) changes.push({ field: "Status", old: currentCert.establishmentStatus || "not_started", new: establishmentStatus });
@@ -86,6 +92,7 @@ export async function POST(req: Request) {
         location: location || null,
         sarabanEmail: sarabanEmail || null,
         sarabanContacts: sarabanContacts,
+        coordinators: coordinators,
         contact247Email: contact247Email || null,
         contact247Phone: contact247Phone || null,
         establishmentStatus: establishmentStatus || "not_started",

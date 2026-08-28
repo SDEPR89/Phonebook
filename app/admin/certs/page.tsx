@@ -13,6 +13,8 @@ export type AdminCertItem = {
   location: string | null;
   sarabanEmail: string | null;
   sarabanContacts: { type: "phone" | "fax"; number: string }[];
+  coordinators: string[];
+  officers: { id: string; name: string }[];
   contact247Email: string | null;
   contact247Phone: string | null;
   establishmentStatus: string;
@@ -61,6 +63,11 @@ export default async function AdminCertsPage() {
       orderBy: (certs, { asc }) => [asc(certs.shortName)],
       with: {
         certUnits: true,
+        officerCerts: {
+          with: {
+            officer: true,
+          }
+        },
       }
     });
     
@@ -79,6 +86,8 @@ export default async function AdminCertsPage() {
       return {
         ...cert,
         sarabanContacts: (cert.sarabanContacts || []) as { type: "phone" | "fax"; number: string }[],
+        coordinators: (cert.coordinators || []) as string[],
+        officers: cert.officerCerts ? cert.officerCerts.map((oc) => ({ id: oc.officer.id, name: oc.officer.name })) : [],
         certUnits: Array.from(translatedUnitIds).map(id => ({ unitId: id })),
       };
     });

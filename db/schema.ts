@@ -123,6 +123,7 @@ export const certs = pgTable(
     location: text("location"),
     sarabanEmail: varchar("saraban_email", { length: 255 }),
     sarabanContacts: jsonb("saraban_contacts").$type<Array<{ type: "phone" | "fax", number: string }>>().default([]),
+    coordinators: jsonb("coordinators").$type<string[]>().default([]),
     contact247Email: varchar("contact247_email", { length: 255 }),
     contact247Phone: varchar("contact247_phone", { length: 128 }),
     establishmentStatus: varchar("establishment_status", { length: 64 })

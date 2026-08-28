@@ -30,6 +30,7 @@ export default function AdminEditCertModal({
   const [location, setLocation] = useState(cert.location || "");
   const [sarabanEmail, setSarabanEmail] = useState(cert.sarabanEmail || "");
   const [sarabanContacts, setSarabanContacts] = useState<{ type: "phone" | "fax", number: string }[]>(cert.sarabanContacts || []);
+  const [coordinators, setCoordinators] = useState<string[]>(cert.coordinators || []);
   const [contact247Email, setContact247Email] = useState(cert.contact247Email || "");
   const [contact247Phone, setContact247Phone] = useState(cert.contact247Phone || "");
   const [establishmentStatus, setEstablishmentStatus] = useState(cert.establishmentStatus || "not_started");
@@ -93,6 +94,7 @@ export default function AdminEditCertModal({
       location.trim() === (cert.location || "").trim() &&
       sarabanEmail.trim() === (cert.sarabanEmail || "").trim() &&
       JSON.stringify(sarabanContacts) === JSON.stringify(cert.sarabanContacts || []) &&
+      JSON.stringify(coordinators) === JSON.stringify(cert.coordinators || []) &&
       contact247Email.trim() === (cert.contact247Email || "").trim() &&
       contact247Phone.trim() === (cert.contact247Phone || "").trim() &&
       establishmentStatus === (cert.establishmentStatus || "not_started") &&
@@ -116,6 +118,7 @@ export default function AdminEditCertModal({
     formData.append("location", location);
     formData.append("sarabanEmail", sarabanEmail);
     formData.append("sarabanContacts", JSON.stringify(sarabanContacts));
+    formData.append("coordinators", JSON.stringify(coordinators));
     formData.append("contact247Email", contact247Email);
     formData.append("contact247Phone", contact247Phone);
     formData.append("establishmentStatus", establishmentStatus);
@@ -328,6 +331,43 @@ export default function AdminEditCertModal({
               onChange={(e) => setFullName(e.target.value)}
               className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
             />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-semibold text-slate-300">ผู้ประสานงาน (Coordinators)</label>
+              <button
+                type="button"
+                onClick={() => setCoordinators([...coordinators, cert.officers?.[0]?.id || ""])}
+                className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition"
+              >
+                + Add Coordinator
+              </button>
+            </div>
+            {coordinators.length === 0 && (
+              <p className="text-xs text-slate-500 italic mb-2">No coordinators added.</p>
+            )}
+            {coordinators.map((coordinatorId, idx) => (
+              <div key={idx} className="flex gap-2 mb-2 items-center">
+                <CustomSelect
+                  value={coordinatorId}
+                  onChange={(val) => {
+                    const newCoordinators = [...coordinators];
+                    newCoordinators[idx] = val;
+                    setCoordinators(newCoordinators);
+                  }}
+                  options={cert.officers?.map(o => ({ value: o.id, label: o.name })) || []}
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCoordinators(coordinators.filter((_, i) => i !== idx))}
+                  className="rounded-xl border border-red-900/40 bg-red-950/20 px-3 py-2 text-red-400 hover:bg-red-900/40 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
 
           <div>
