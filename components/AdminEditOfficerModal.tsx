@@ -71,8 +71,10 @@ export default function AdminEditOfficerModal({
     }
   }, [isOpen]);
 
-  const isProtectedTarget =
-    officer.systemRole === "superadmin" && viewerRole !== "superadmin";
+  if (!isOpen) return null;
+
+  const isReadOnly = viewerRole !== "superadmin" && systemRole === "superadmin";
+  const isProtectedTarget = viewerRole !== "superadmin" && systemRole === "superadmin";
 
   const handleDelete = async () => {
     if (isProtectedTarget) {
@@ -224,8 +226,11 @@ export default function AdminEditOfficerModal({
               Profile Avatar
             </label>
             <div
-              onClick={() => fileInputRef.current?.click()}
-              className="flex cursor-pointer items-center justify-between rounded-xl border-2 border-dashed border-slate-800 bg-slate-950/60 p-3 hover:border-slate-700"
+              onClick={() => {
+                if (!isReadOnly) fileInputRef.current?.click();
+              }}
+              className={`flex items-center justify-between rounded-xl border-2 border-dashed border-slate-800 bg-slate-950/60 p-3 ${isReadOnly ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-slate-700"
+                }`}
             >
               <input
                 ref={fileInputRef}
@@ -271,9 +276,13 @@ export default function AdminEditOfficerModal({
             <input
               type="text"
               required
+              disabled={isReadOnly}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              className={`w-full rounded-xl border border-slate-800 px-3.5 py-2 text-sm outline-none ${isReadOnly
+                ? "bg-slate-900/60 text-slate-400 cursor-not-allowed"
+                : "bg-slate-950 text-slate-100 focus:border-blue-500"
+                }`}
             />
           </div>
 
@@ -284,9 +293,13 @@ export default function AdminEditOfficerModal({
             <input
               type="email"
               required
+              disabled={isReadOnly}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              className={`w-full rounded-xl border border-slate-800 px-3.5 py-2 text-sm outline-none ${isReadOnly
+                ? "bg-slate-900/60 text-slate-400 cursor-not-allowed"
+                : "bg-slate-950 text-slate-100 focus:border-blue-500"
+                }`}
             />
           </div>
 
@@ -299,7 +312,7 @@ export default function AdminEditOfficerModal({
               value={certName}
               onChange={setCertName}
               placeholder="Select Cert Name"
-              disabled={isLoadingOptions}
+              disabled={isLoadingOptions || isReadOnly}
             />
           </div>
 
@@ -312,7 +325,7 @@ export default function AdminEditOfficerModal({
               value={roleName}
               onChange={setRoleName}
               placeholder="Select Role Name"
-              disabled={isLoadingOptions}
+              disabled={isLoadingOptions || isReadOnly}
             />
           </div>
 
@@ -327,7 +340,7 @@ export default function AdminEditOfficerModal({
                 onChange={(e) => setSystemRole(e.target.value)}
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
               >
-                <option value="officer">User (Officer)</option>
+                <option value="officer">Officer</option>
                 <option value="admin">Administrator</option>
                 <option value="superadmin">Super Administrator</option>
               </select>
@@ -339,8 +352,8 @@ export default function AdminEditOfficerModal({
                   systemRole === "superadmin"
                     ? "Super Administrator"
                     : systemRole === "admin"
-                    ? "Administrator"
-                    : "User (Officer)"
+                      ? "Administrator"
+                      : "Officer"
                 }
                 className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3.5 py-2 text-sm text-slate-400 cursor-not-allowed"
               />
@@ -349,54 +362,68 @@ export default function AdminEditOfficerModal({
 
           <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
             <div>
-              {showConfirmDelete ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-400">Are you sure?</span>
+              {!isReadOnly && (
+                showConfirmDelete ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-400">Are you sure?</span>
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isDeleting || isSaving}
+                      className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                    >
+                      {isDeleting ? "..." : "Yes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmDelete(false)}
+                      disabled={isDeleting || isSaving}
+                      className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={handleDelete}
+                    onClick={() => setShowConfirmDelete(true)}
                     disabled={isDeleting || isSaving}
-                    className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                    className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
                   >
-                    {isDeleting ? "..." : "Yes"}
+                    Delete
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmDelete(false)}
-                    disabled={isDeleting || isSaving}
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmDelete(true)}
-                  disabled={isDeleting || isSaving || isProtectedTarget}
-                  className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Delete
-                </button>
+                )
               )}
             </div>
 
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isDeleting || isSaving}
-                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving || isDeleting || isProtectedTarget}
-                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </button>
+              {isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isDeleting || isSaving}
+                    className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving || isDeleting}
+                    className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </form>

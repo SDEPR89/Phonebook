@@ -45,6 +45,7 @@ export default function HomePage() {
           console.log("Profile Data Payload:", data);
 
           const extractedRole =
+            data.systemRole ||
             data.role ||
             data.user?.role ||
             data.roles?.[0] ||
@@ -132,9 +133,8 @@ export default function HomePage() {
 
   return (
     <main
-      className={`relative flex min-h-screen flex-col items-center bg-[#1c182e] px-4 pb-16 overflow-x-hidden select-none text-slate-100 transition-all duration-500 ${
-        isLoggedOut ? "justify-center pt-0" : "justify-start pt-28"
-      }`}
+      className={`relative flex min-h-screen flex-col items-center bg-[#1c182e] px-4 pb-16 overflow-x-hidden select-none text-slate-100 transition-all duration-500 ${isLoggedOut ? "justify-center pt-0" : "justify-start pt-28"
+        }`}
     >
       {/* Keyframes & Animations */}
       <style>{`
@@ -194,9 +194,8 @@ export default function HomePage() {
 
       {/* 4. Concentric Breathing Rings */}
       <div
-        className={`pointer-events-none absolute left-1/2 z-0 flex items-center justify-center transition-all duration-700 ease-out opacity-65 ${
-          isLoggedOut ? "top-1/2" : "top-[215px]"
-        }`}
+        className={`pointer-events-none absolute left-1/2 z-0 flex items-center justify-center transition-all duration-700 ease-out opacity-65 ${isLoggedOut ? "top-1/2" : "top-[215px]"
+          }`}
         style={{
           transform: `translate(-50%, -50%) ${isNearCenter ? "scale(0.62)" : "scale(1)"}`,
         }}
@@ -227,13 +226,11 @@ export default function HomePage() {
 
       {/* 5. Central Airbrush Spotlight Overlay */}
       <div
-        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ease-out ${
-          isLoggedOut ? "top-1/2" : "top-[215px]"
-        } ${
-          isNearCenter
+        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ease-out ${isLoggedOut ? "top-1/2" : "top-[215px]"
+          } ${isNearCenter
             ? "h-[280px] w-[280px] opacity-95 blur-md"
             : "h-[220px] w-[220px] opacity-60 blur-2xl"
-        }`}
+          }`}
         style={{
           background:
             "radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(199, 210, 254, 0.4) 45%, rgba(129, 140, 248, 0.15) 70%, transparent 90%)",
@@ -246,9 +243,8 @@ export default function HomePage() {
         {/* Header Block */}
         <div className="flex flex-col items-center gap-6" ref={searchContainerRef}>
           <h1
-            className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-5xl transition-transform duration-500 ease-out origin-center ${
-              isNearCenter ? "scale-105" : "scale-100"
-            }`}
+            className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-5xl transition-transform duration-500 ease-out origin-center ${isNearCenter ? "scale-105" : "scale-100"
+              }`}
           >
             CERT Community Phonebook
           </h1>
@@ -318,10 +314,10 @@ export default function HomePage() {
             )}
           </div>
         )}
-
-        {/* 7. Non-sticky Admin Page Button */}
+        {/* 7. Admin Page Button (Positioned at Bottom Right) */}
         {!isLoadingAuth && isAdmin && (
-          <div className="mt-6 flex w-full justify-end">
+          <div className="fixed bottom-6 right-6 z-50">
+
             <Link
               href="/admin"
               className="flex items-center gap-2 rounded-full border border-indigo-900/60 bg-slate-900/90 px-6 py-3 text-sm font-semibold text-indigo-100 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-indigo-950 hover:text-white hover:border-indigo-700/80 active:scale-95"
