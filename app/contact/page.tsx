@@ -42,7 +42,7 @@ export default function ContactPage() {
       {/* Main Content Grid: Information Cards */}
       <div className="relative z-10 grid w-full max-w-4xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {/* Email Card */}
-        <div className="flex flex-col justify-between rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
+        <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -54,15 +54,15 @@ export default function ContactPage() {
               <p className="text-xs text-indigo-200/70">General Inquiry</p>
             </div>
           </div>
-          <div className="mt-6">
-            <a href="mailto:support@certcommunity.org" className="text-sm font-medium text-indigo-300 hover:text-white transition-colors">
-              support@certcommunity.org 
+          <div className="mt-4">
+            <a href="mailto:thaicert@ncsa.or.th" className="text-sm font-medium text-indigo-300 hover:text-white transition-colors">
+              thaicert@ncsa.or.th 
             </a> 
           </div>
         </div>
 
         {/* Location Card */}
-        <div className="flex flex-col justify-between rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
+        <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -75,13 +75,13 @@ export default function ContactPage() {
               <p className="text-xs text-indigo-200/70">Headquarters</p>
             </div>
           </div>
-          <div className="mt-6 text-sm text-indigo-300">
-            100 Emergency Way, Suite 400<br />San Francisco, CA 94103
+          <div className="mt-4 text-sm text-indigo-300">
+            120 หมู่ 3 อาคารซี ชั้น 10 ศูนย์ราชการเฉลิมพระเกียรติ 80 พรรษา 5 ธันวาคม 2550 ถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่ กรุงเทพฯ 10210
           </div>
         </div>
 
         {/* Operating Hours Card */}
-        <div className="flex flex-col justify-between rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl sm:col-span-2 lg:col-span-1">
+        <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -93,7 +93,7 @@ export default function ContactPage() {
               <p className="text-xs text-indigo-200/70">PST Timezone</p>
             </div>
           </div>
-          <div className="mt-6 text-sm text-indigo-300">
+          <div className="mt-4 text-sm text-indigo-300">
             จันทร์ – ศุกร์: 8:30 น. – 4:30 น.<br />
             <span className="text-xs text-indigo-200/60">Emergency support active 24/7</span>
           </div>
@@ -111,7 +111,7 @@ export default function ContactPage() {
           {team.map((member, idx) => (
             <div
               key={idx}
-              className="flex flex-col justify-center rounded-xl border border-white/5 bg-white/[0.03] p-4 backdrop-blur-sm transition-all duration-200 hover:border-white/15 hover:bg-white/[0.06]"
+              className="flex flex-col justify-start rounded-xl border border-white/5 bg-white/[0.03] p-4 backdrop-blur-sm transition-all duration-200 hover:border-white/15 hover:bg-white/[0.06]"
             >
               <a
                 href={member.link}
