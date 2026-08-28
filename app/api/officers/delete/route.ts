@@ -40,6 +40,13 @@ export async function DELETE(req: Request) {
 
     const officer = existingOfficer[0];
 
+    if (session.role === "admin" && officer.systemRole === "superadmin") {
+      return NextResponse.json(
+        { error: "Forbidden: Admins cannot delete super admin accounts." },
+        { status: 403 }
+      );
+    }
+
     // 2. Insert DELETED record into Audit Logs
     const [actor] = await db
       .select()

@@ -33,16 +33,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let systemRoleToUpdate: string | undefined = undefined;
-    if (requestedSystemRole && ["officer", "admin", "superadmin"].includes(requestedSystemRole)) {
-      if (session.role !== "superadmin") {
-        return NextResponse.json(
-          { error: "Only Super Admins can modify account system roles." },
-          { status: 403 }
-        );
-      }
-      systemRoleToUpdate = requestedSystemRole;
-    }
+
 
     // Process Avatar File
     let avatarUrl: string | undefined = undefined;
@@ -67,6 +58,26 @@ export async function POST(req: Request) {
     }
 
     const currentOfficer = existingOfficer[0];
+
+    if (session.role === "admin" && currentOfficer.systemRole !== "officer") {
+      return NextResponse.json(
+        { error: "Forbidden: Admins can only modify officer accounts." },
+        { status: 403 }
+      );
+    }
+
+    let systemRoleToUpdate: string | undefined = undefined;
+    if (requestedSystemRole && ["officer", "admin", "superadmin"].includes(requestedSystemRole)) {
+      if (requestedSystemRole !== currentOfficer.systemRole) {
+        if (session.role !== "superadmin") {
+          return NextResponse.json(
+            { error: "Only Super Admins can modify account system roles." },
+            { status: 403 }
+          );
+        }
+        systemRoleToUpdate = requestedSystemRole;
+      }
+    }
 
     // 2. Fetch linked cert and role
     const currentCertRoleLink = await db
@@ -223,7 +234,7 @@ export async function POST(req: Request) {
       await db
         .delete(officerCertRoles)
         .where(eq(officerCertRoles.officerCertId, junctionId));
-      
+
       await db
         .insert(officerCertRoles)
         .values({ officerCertId: junctionId, roleId: targetRoleId });
