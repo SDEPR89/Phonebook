@@ -314,10 +314,32 @@ export default function HomePage() {
             )}
           </div>
         )}
-        {/* 7. Admin Page Button (Positioned at Bottom Right) */}
-        {!isLoadingAuth && isAdmin && (
-          <div className="fixed bottom-6 right-6 z-50">
 
+  {/* Footer Buttons Container (Contact Left, Admin Right) */}
+        <div className="flex w-full items-center justify-between mt-auto pt-6">
+          {/* Contact Button */}
+          <Link
+            href="/contact"
+            className="flex items-center gap-2 rounded-full border border-indigo-900/60 bg-slate-900/90 px-6 py-3 text-sm font-semibold text-indigo-100 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-indigo-950 hover:text-white hover:border-indigo-700/80 active:scale-95"
+          >
+            <svg
+              className="h-5 w-5 text-indigo-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+            <span>Contact</span>
+          </Link>
+
+          {/* Admin Page Button */}
+          {!isLoadingAuth && isAdmin ? (
             <Link
               href="/admin"
               className="flex items-center gap-2 rounded-full border border-indigo-900/60 bg-slate-900/90 px-6 py-3 text-sm font-semibold text-indigo-100 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-indigo-950 hover:text-white hover:border-indigo-700/80 active:scale-95"
@@ -342,8 +364,10 @@ export default function HomePage() {
               </svg>
               <span>Admin Page</span>
             </Link>
-          </div>
-        )}
+          ) : (
+            <div /> /* Empty div placeholder keeps Contact aligned left if Admin is hidden */
+          )}
+        </div>
       </div>
     </main>
   );
