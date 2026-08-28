@@ -11,6 +11,8 @@ type AdminEditCertModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  areas: { id: string; name: string }[];
+  units: { id: string; name: string }[];
 };
 
 export default function AdminEditCertModal({
@@ -18,6 +20,8 @@ export default function AdminEditCertModal({
   isOpen,
   onClose,
   onSuccess,
+  areas,
+  units,
 }: AdminEditCertModalProps) {
   const router = useRouter();
 
@@ -29,6 +33,10 @@ export default function AdminEditCertModal({
   const [contact247Email, setContact247Email] = useState(cert.contact247Email || "");
   const [contact247Phone, setContact247Phone] = useState(cert.contact247Phone || "");
   const [establishmentStatus, setEstablishmentStatus] = useState(cert.establishmentStatus || "not_started");
+  const [areaId, setAreaId] = useState(cert.areaId || (areas[0]?.id || ""));
+  const [selectedUnits, setSelectedUnits] = useState<{ id: string }[]>(
+    cert.certUnits ? cert.certUnits.map(cu => ({ id: cu.unitId })) : []
+  );
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(
@@ -88,6 +96,8 @@ export default function AdminEditCertModal({
       contact247Email.trim() === (cert.contact247Email || "").trim() &&
       contact247Phone.trim() === (cert.contact247Phone || "").trim() &&
       establishmentStatus === (cert.establishmentStatus || "not_started") &&
+      areaId === cert.areaId &&
+      JSON.stringify(selectedUnits.map(u => u.id).sort()) === JSON.stringify((cert.certUnits || []).map(cu => cu.unitId).sort()) &&
       !logoFile;
 
     if (isUnchanged) {
@@ -109,6 +119,8 @@ export default function AdminEditCertModal({
     formData.append("contact247Email", contact247Email);
     formData.append("contact247Phone", contact247Phone);
     formData.append("establishmentStatus", establishmentStatus);
+    formData.append("areaId", areaId);
+    formData.append("units", JSON.stringify(selectedUnits.map(u => u.id)));
     if (logoFile) {
       formData.append("logo", logoFile);
     }
@@ -221,6 +233,55 @@ export default function AdminEditCertModal({
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
+                ด้าน (Sector)
+              </label>
+              <CustomSelect
+                value={areaId}
+                onChange={setAreaId}
+                options={areas.map((a) => ({ value: a.id, label: a.name }))}
+              />
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-semibold text-slate-300">หน่วย (Agencies/Units)</label>
+                <button
+                  type="button"
+                  onClick={() => setSelectedUnits([...selectedUnits, { id: units[0]?.id || "" }])}
+                  className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition"
+                >
+                  + Add Unit
+                </button>
+              </div>
+              {selectedUnits.length === 0 && (
+                <p className="text-xs text-slate-500 italic mb-2">No units selected.</p>
+              )}
+              {selectedUnits.map((unit, idx) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <CustomSelect
+                    value={unit.id}
+                    onChange={(val) => {
+                      const newUnits = [...selectedUnits];
+                      newUnits[idx].id = val;
+                      setSelectedUnits(newUnits);
+                    }}
+                    options={units.map((u) => ({ value: u.id, label: u.name }))}
+                    className="flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUnits(selectedUnits.filter((_, i) => i !== idx))}
+                    className="rounded-xl border border-red-900/40 bg-red-950/20 px-3 py-2 text-red-400 hover:bg-red-900/40 transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 

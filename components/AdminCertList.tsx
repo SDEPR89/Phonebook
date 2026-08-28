@@ -9,6 +9,8 @@ import Image from "next/image";
 
 interface AdminCertListProps {
   initialCerts?: AdminCertItem[];
+  areas?: { id: string; name: string }[];
+  units?: { id: string; name: string }[];
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -38,7 +40,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   },
 };
 
-export default function AdminCertList({ initialCerts = [] }: AdminCertListProps) {
+export default function AdminCertList({ initialCerts = [], areas = [], units = [] }: AdminCertListProps) {
   const router = useRouter();
 
   const [selectedCert, setSelectedCert] = useState<AdminCertItem | null>(null);
@@ -145,6 +147,8 @@ export default function AdminCertList({ initialCerts = [] }: AdminCertListProps)
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={handleEditSuccess}
+          areas={areas}
+          units={units}
         />
       )}
 
@@ -155,6 +159,8 @@ export default function AdminCertList({ initialCerts = [] }: AdminCertListProps)
           setIsCreateModalOpen(false);
           router.refresh();
         }}
+        areas={areas}
+        units={units}
       />
     </>
   );

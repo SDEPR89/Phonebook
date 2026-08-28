@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
-import { certs, auditLogs, officers } from "@/db/schema";
+import { certs, auditLogs, officers, certUnits } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: Request) {
@@ -27,6 +27,12 @@ export async function POST(req: Request) {
     const contact247Email = (formData.get("contact247Email") as string) || "";
     const contact247Phone = (formData.get("contact247Phone") as string) || "";
     const establishmentStatus = (formData.get("establishmentStatus") as string) || "";
+    const areaId = (formData.get("areaId") as string) || "";
+    const unitsRaw = formData.get("units") as string;
+    let units: string[] = [];
+    if (unitsRaw) {
+      try { units = JSON.parse(unitsRaw); } catch(e) {}
+    }
     
     const logoFile = formData.get("logo") as File | null;
 
@@ -68,6 +74,8 @@ export async function POST(req: Request) {
     if ((currentCert.contact247Email || "") !== contact247Email) changes.push({ field: "24/7 Email", old: currentCert.contact247Email || "", new: contact247Email });
     if ((currentCert.contact247Phone || "") !== contact247Phone) changes.push({ field: "24/7 Phone", old: currentCert.contact247Phone || "", new: contact247Phone });
     if ((currentCert.establishmentStatus || "not_started") !== establishmentStatus) changes.push({ field: "Status", old: currentCert.establishmentStatus || "not_started", new: establishmentStatus });
+    if (areaId && currentCert.areaId !== areaId) changes.push({ field: "Area", old: currentCert.areaId, new: areaId });
+    // Note: Logging unit changes is more complex and omitted here for simplicity, but could be added.
     if (logoUrl) changes.push({ field: "Logo", old: "Previous Logo", new: "Updated Logo" });
 
     await db
@@ -81,10 +89,22 @@ export async function POST(req: Request) {
         contact247Email: contact247Email || null,
         contact247Phone: contact247Phone || null,
         establishmentStatus: establishmentStatus || "not_started",
+        ...(areaId && { areaId }),
         ...(logoUrl && { logoUrl }),
         updatedAt: new Date(),
       })
       .where(eq(certs.id, certId));
+
+    await db.delete(certUnits).where(eq(certUnits.certId, certId));
+    if (units.length > 0) {
+      const uniqueUnits = Array.from(new Set(units));
+      await db.insert(certUnits).values(
+        uniqueUnits.map(unitId => ({
+          certId,
+          unitId
+        }))
+      );
+    }
 
     if (changes.length > 0) {
       const [actor] = await db
