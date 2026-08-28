@@ -36,9 +36,9 @@ export default function CustomSelect({ value, onChange, options, className = "" 
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none transition hover:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none transition hover:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-0"
       >
-        <span className="flex items-center gap-2 truncate">
+        <span className="flex items-center gap-2 truncate min-w-0">
           {selectedOption?.color && (
             <span className={`h-2 w-2 shrink-0 rounded-full ${selectedOption.color}`}></span>
           )}

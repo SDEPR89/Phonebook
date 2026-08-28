@@ -35,7 +35,18 @@ export default function AdminCreateCertModal({
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      setLogoFile(file);
+      if (logoPreview && logoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreview);
+      }
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +116,7 @@ export default function AdminCreateCertModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-800 bg-[#0B0F17] p-6 shadow-2xl text-slate-100 my-8">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-slate-800 bg-[#0B0F17] p-6 shadow-2xl text-slate-100 my-8">
         <button
           type="button"
           onClick={onClose}
@@ -133,8 +144,24 @@ export default function AdminCreateCertModal({
               CERT Logo
             </label>
             <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                if (e.dataTransfer.files?.[0]) {
+                  handleFile(e.dataTransfer.files[0]);
+                }
+              }}
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-between rounded-xl border-2 border-dashed border-slate-800 bg-slate-950/60 p-3 cursor-pointer hover:border-slate-700"
+              className={`flex items-center justify-between rounded-xl border-2 border-dashed p-3 transition cursor-pointer ${
+                isDragging
+                  ? "border-blue-500 bg-blue-500/10"
+                  : "border-slate-800 bg-slate-950/60 hover:border-slate-700"
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -144,8 +171,7 @@ export default function AdminCreateCertModal({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    setLogoFile(file);
-                    setLogoPreview(URL.createObjectURL(file));
+                    handleFile(file);
                   }
                 }}
               />
@@ -167,10 +193,11 @@ export default function AdminCreateCertModal({
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-200">
-                    Upload new logo
+                    {isDragging ? "Drop image here..." : "Drag & drop image here, or "}
+                    {!isDragging && <span className="text-blue-400 underline">browse</span>}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Click to add a CERT image
+                    Click or drag to add a CERT image
                   </p>
                 </div>
               </div>
@@ -186,58 +213,6 @@ export default function AdminCreateCertModal({
                 value={areaId}
                 onChange={setAreaId}
                 options={areas.map((a) => ({ value: a.id, label: a.name }))}
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-semibold text-slate-300">หน่วย (Agencies/Units)</label>
-                <button
-                  type="button"
-                  onClick={() => setSelectedUnits([...selectedUnits, { id: units[0]?.id || "" }])}
-                  className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition"
-                >
-                  + Add Unit
-                </button>
-              </div>
-              {selectedUnits.length === 0 && (
-                <p className="text-xs text-slate-500 italic mb-2">No units selected.</p>
-              )}
-              {selectedUnits.map((unit, idx) => (
-                <div key={idx} className="flex gap-2 mb-2 items-center">
-                  <CustomSelect
-                    value={unit.id}
-                    onChange={(val) => {
-                      const newUnits = [...selectedUnits];
-                      newUnits[idx].id = val;
-                      setSelectedUnits(newUnits);
-                    }}
-                    options={units.map((u) => ({ value: u.id, label: u.name }))}
-                    className="flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedUnits(selectedUnits.filter((_, i) => i !== idx))}
-                    className="rounded-xl border border-red-900/40 bg-red-950/20 px-3 py-2 text-red-400 hover:bg-red-900/40 transition"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Short Name
-              </label>
-              <input
-                type="text"
-                required
-                value={shortName}
-                onChange={(e) => setShortName(e.target.value.toUpperCase())}
-                placeholder="e.g. THAICERT"
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
               />
             </div>
             <div>
@@ -260,6 +235,70 @@ export default function AdminCreateCertModal({
           </div>
 
           <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-semibold text-slate-300">หน่วย (Agencies/Units)</label>
+              <button
+                type="button"
+                onClick={() => setSelectedUnits([...selectedUnits, { id: units[0]?.id || "" }])}
+                className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition"
+              >
+                + Add Unit
+              </button>
+            </div>
+            {selectedUnits.length === 0 && (
+              <p className="text-xs text-slate-500 italic mb-2">No units selected.</p>
+            )}
+            {selectedUnits.map((unit, idx) => (
+              <div key={idx} className="flex gap-2 mb-2 items-center">
+                <CustomSelect
+                  value={unit.id}
+                  onChange={(val) => {
+                    const newUnits = [...selectedUnits];
+                    newUnits[idx].id = val;
+                    setSelectedUnits(newUnits);
+                  }}
+                  options={units.map((u) => ({ value: u.id, label: u.name }))}
+                  className="flex-1 min-w-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedUnits(selectedUnits.filter((_, i) => i !== idx))}
+                  className="shrink-0 flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-red-900/40 bg-red-950/20 text-red-400 hover:bg-red-900/40 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
+                Short Name
+              </label>
+              <input
+                type="text"
+                required
+                value={shortName}
+                onChange={(e) => setShortName(e.target.value.toUpperCase())}
+                placeholder="e.g. THAICERT"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">
+                Location
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
               Full Name
             </label>
@@ -274,22 +313,10 @@ export default function AdminCreateCertModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Location
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">
               Saraban Email
             </label>
             <input
-              type="email"
+              type="text"
               value={sarabanEmail}
               onChange={(e) => setSarabanEmail(e.target.value)}
               className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
@@ -323,7 +350,7 @@ export default function AdminCreateCertModal({
                     { value: "phone", label: "โทรศัพท์" },
                     { value: "fax", label: "แฟกซ์" },
                   ]}
-                  className="w-1/3"
+                  className="w-32 shrink-0 min-w-0"
                 />
                 <input 
                   type="text" 
@@ -334,12 +361,12 @@ export default function AdminCreateCertModal({
                     newContacts[idx].number = e.target.value;
                     setSarabanContacts(newContacts);
                   }} 
-                  className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500" 
+                  className="flex-1 min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500" 
                 />
                 <button 
                   type="button" 
                   onClick={() => setSarabanContacts(sarabanContacts.filter((_, i) => i !== idx))} 
-                  className="rounded-xl border border-red-900/40 bg-red-950/20 px-3 text-red-400 hover:bg-red-900/40 transition"
+                  className="shrink-0 flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-red-900/40 bg-red-950/20 text-red-400 hover:bg-red-900/40 transition"
                 >
                   ✕
                 </button>
@@ -353,7 +380,7 @@ export default function AdminCreateCertModal({
                 24/7 Contact Email
               </label>
               <input
-                type="email"
+                type="text"
                 value={contact247Email}
                 onChange={(e) => setContact247Email(e.target.value)}
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
