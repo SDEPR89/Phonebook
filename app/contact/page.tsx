@@ -94,7 +94,7 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="mt-6 text-sm text-indigo-300">
-            Mon – Fri: 8:30 AM – 4:30 PM<br />
+            จันทร์ – ศุกร์: 8:30 น. – 4:30 น.<br />
             <span className="text-xs text-indigo-200/60">Emergency support active 24/7</span>
           </div>
         </div>
