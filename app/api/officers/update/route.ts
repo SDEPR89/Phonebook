@@ -68,6 +68,13 @@ export async function POST(req: Request) {
 
     const currentOfficer = existingOfficer[0];
 
+    if (currentOfficer.systemRole === "superadmin" && session.role !== "superadmin") {
+      return NextResponse.json(
+        { error: "Only Super Admins can modify Super Admin accounts." },
+        { status: 403 }
+      );
+    }
+
     // 2. Fetch linked cert and role
     const currentCertRoleLink = await db
       .select({

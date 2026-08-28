@@ -67,6 +67,19 @@ export async function PUT(
       );
     }
 
+    const [targetOfficer] = await db
+      .select({ systemRole: officers.systemRole })
+      .from(officers)
+      .where(eq(officers.id, officerId))
+      .limit(1);
+
+    if (targetOfficer?.systemRole === "superadmin" && session.role !== "superadmin") {
+      return NextResponse.json(
+        { error: "Only Super Admins can modify Super Admin accounts." },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
@@ -233,6 +246,20 @@ export async function DELETE(
     }
 
     const { id: officerId } = await params;
+
+    const [targetOfficer] = await db
+      .select({ systemRole: officers.systemRole })
+      .from(officers)
+      .where(eq(officers.id, officerId))
+      .limit(1);
+
+    if (targetOfficer?.systemRole === "superadmin" && session.role !== "superadmin") {
+      return NextResponse.json(
+        { error: "Only Super Admins can delete Super Admin accounts." },
+        { status: 403 }
+      );
+    }
+
     const now = new Date();
 
     // Soft delete officer

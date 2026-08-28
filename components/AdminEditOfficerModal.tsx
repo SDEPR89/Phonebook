@@ -71,9 +71,14 @@ export default function AdminEditOfficerModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const isProtectedTarget =
+    officer.systemRole === "superadmin" && viewerRole !== "superadmin";
 
   const handleDelete = async () => {
+    if (isProtectedTarget) {
+      setError("Only Super Admins can delete Super Admin accounts.");
+      return;
+    }
     setIsDeleting(true);
     setError(null);
     setInfoMessage(null);
@@ -107,6 +112,11 @@ export default function AdminEditOfficerModal({
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (isProtectedTarget) {
+      setError("Only Super Admins can modify Super Admin accounts.");
+      return;
+    }
 
     // Check if any fields changed
     const isUnchanged =
@@ -189,6 +199,12 @@ export default function AdminEditOfficerModal({
             Update user information or remove officer profile.
           </p>
         </div>
+
+        {isProtectedTarget && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-400">
+            🔒 Super Admin accounts can only be modified by Super Administrators.
+          </div>
+        )}
 
         {infoMessage && (
           <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
@@ -357,8 +373,8 @@ export default function AdminEditOfficerModal({
                 <button
                   type="button"
                   onClick={() => setShowConfirmDelete(true)}
-                  disabled={isDeleting || isSaving}
-                  className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
+                  disabled={isDeleting || isSaving || isProtectedTarget}
+                  className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Delete
                 </button>
@@ -376,8 +392,8 @@ export default function AdminEditOfficerModal({
               </button>
               <button
                 type="submit"
-                disabled={isSaving || isDeleting}
-                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                disabled={isSaving || isDeleting || isProtectedTarget}
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </button>

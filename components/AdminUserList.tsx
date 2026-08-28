@@ -109,6 +109,9 @@ export default function AdminUserList({
           filteredUsers.map((officer) => {
             const roleInfo =
               ROLE_LABELS[officer.systemRole] || ROLE_LABELS.officer;
+            const isProtected =
+              officer.systemRole === "superadmin" && viewerRole !== "superadmin";
+
             return (
               <div
                 key={officer.officerId}
@@ -142,13 +145,22 @@ export default function AdminUserList({
                     {officer.certName || "No Cert"}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(officer)}
-                    className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                  >
-                    Edit
-                  </button>
+                  {isProtected ? (
+                    <span
+                      className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
+                      title="Super Admin accounts can only be edited by Super Admins"
+                    >
+                      Protected
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(officer)}
+                      className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
               </div>
             );
