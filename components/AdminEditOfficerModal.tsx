@@ -213,7 +213,7 @@ export default function AdminEditOfficerModal({
         return;
       }
 
-      setError(data.error || `Failed to delete officer (${res.status})`);
+      setError(data.error || `ไม่สามารถลบผู้ใช้ได้ (${res.status})`);
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred while deleting.");
@@ -245,7 +245,7 @@ export default function AdminEditOfficerModal({
       !avatarFile;
 
     if (isUnchanged) {
-      setInfoMessage("Nothing changed.");
+      setInfoMessage("ไม่มีการเปลี่ยนแปลง");
       return;
     }
 
@@ -298,7 +298,7 @@ export default function AdminEditOfficerModal({
         return;
       }
 
-      setError(data.error || `Failed to update officer (${res.status})`);
+      setError(data.error || `ไม่สามารถอัปเดตผู้ใช้ได้ (${res.status})`);
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred while saving.");
@@ -320,9 +320,9 @@ export default function AdminEditOfficerModal({
         </button>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold">Edit Officer Profile</h2>
+          <h2 className="text-xl font-bold">แก้ไขโปรไฟล์ผู้ใช้</h2>
           <p className="text-xs text-slate-400">
-            Update user information or remove officer profile.
+            แก้ไขข้อมูลผู้ใช้ หรือลบโปรไฟล์ผู้ใช้
           </p>
         </div>
 
@@ -347,7 +347,7 @@ export default function AdminEditOfficerModal({
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Profile Avatar
+              รูปโปรไฟล์
             </label>
             <div
               onDragOver={(e) => {
@@ -410,7 +410,7 @@ export default function AdminEditOfficerModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Name
+              ชื่อ-นามสกุล
             </label>
             <input
               type="text"
@@ -424,7 +424,7 @@ export default function AdminEditOfficerModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Email
+              อีเมล
             </label>
             <input
               type="email"
@@ -438,7 +438,7 @@ export default function AdminEditOfficerModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Cert Name
+              ชื่อ CERT
             </label>
             <Dropdown
               options={certOptions}
@@ -451,7 +451,7 @@ export default function AdminEditOfficerModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Role Name
+              ตำแหน่ง
             </label>
             <Dropdown
               options={roleOptions}
@@ -498,14 +498,14 @@ export default function AdminEditOfficerModal({
             <div>
               {showConfirmDelete ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-400">Are you sure?</span>
+                  <span className="text-xs font-medium text-slate-400">คุณแน่ใจหรือไม่?</span>
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting || isSaving || isProtectedTarget}
                     className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isDeleting ? "..." : "Yes"}
+                    {isDeleting ? "..." : "ใช่"}
                   </button>
                   <button
                     type="button"
@@ -513,7 +513,7 @@ export default function AdminEditOfficerModal({
                     disabled={isDeleting || isSaving}
                     className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
                   >
-                    No
+                    ไม่
                   </button>
                 </div>
               ) : (
@@ -523,7 +523,7 @@ export default function AdminEditOfficerModal({
                   disabled={isDeleting || isSaving || isProtectedTarget}
                   className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete
+                  ลบ
                 </button>
               )}
             </div>
@@ -535,14 +535,14 @@ export default function AdminEditOfficerModal({
                 disabled={isDeleting || isSaving}
                 className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
               >
-                Cancel
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 disabled={isSaving || isDeleting || isProtectedTarget}
                 className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
               </button>
             </div>
           </div>

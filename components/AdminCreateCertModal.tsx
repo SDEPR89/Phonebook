@@ -94,7 +94,7 @@ export default function AdminCreateCertModal({
 
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
-      setError(data.error || `Failed to create CERT (${res.status})`);
+      setError(data.error || `ไม่สามารถสร้าง CERT ได้ (${res.status})`);
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred while saving.");
@@ -115,9 +115,9 @@ export default function AdminCreateCertModal({
         </button>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold">Add New CERT</h2>
+          <h2 className="text-xl font-bold">เพิ่ม CERT ใหม่</h2>
           <p className="text-xs text-slate-400">
-            Create a new CERT entity in the system.
+            สร้าง CERT ใหม่ในระบบ
           </p>
         </div>
 
@@ -379,14 +379,14 @@ export default function AdminCreateCertModal({
               disabled={isSaving}
               className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
             >
-              Cancel
+              ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSaving}
               className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
             >
-              {isSaving ? "Creating..." : "Create CERT"}
+              {isSaving ? "กำลังสร้าง..." : "เพิ่ม CERT"}
             </button>
           </div>
         </form>

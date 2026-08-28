@@ -158,7 +158,7 @@ export default function AdminUserList({
                       onClick={() => handleEdit(officer)}
                       className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
                     >
-                      Edit
+                      แก้ไข
                     </button>
                   )}
                 </div>
@@ -192,7 +192,7 @@ export default function AdminUserList({
         onClick={() => setIsCreateModalOpen(true)}
         className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-xl shadow-blue-600/30 transition hover:scale-105 hover:bg-blue-500 active:scale-95 cursor-pointer"
       >
-        <span className="text-lg leading-none">+</span> Add Officer
+        <span className="text-lg leading-none">+</span> เพิ่มผู้ใช้
       </button>
 
       {/* Modals */}

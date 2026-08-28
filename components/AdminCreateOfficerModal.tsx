@@ -219,7 +219,7 @@ export default function AdminCreateOfficerModal({
         onSuccess();
         onClose();
       } else {
-        setError(data.error || `Failed to create officer (${res.status}).`);
+        setError(data.error || `ไม่สามารถสร้างผู้ใช้ได้ (${res.status}).`);
       }
     } catch (err) {
       console.error(err);
@@ -241,9 +241,9 @@ export default function AdminCreateOfficerModal({
         </button>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold">Add New Officer</h2>
+          <h2 className="text-xl font-bold">เพิ่มผู้ใช้ใหม่</h2>
           <p className="text-xs text-slate-400">
-            Create a new officer profile and assign certifications.
+            สร้างโปรไฟล์ผู้ใช้ใหม่และกำหนด CERT
           </p>
         </div>
 
@@ -257,7 +257,7 @@ export default function AdminCreateOfficerModal({
           {/* Avatar Upload */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Profile Avatar
+              รูปโปรไฟล์
             </label>
             <div
               onDragOver={(e) => {
@@ -310,7 +310,7 @@ export default function AdminCreateOfficerModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Name *
+                ชื่อ-นามสกุล *
               </label>
               <input
                 type="text"
@@ -323,7 +323,7 @@ export default function AdminCreateOfficerModal({
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Phone
+                เบอร์โทรศัพท์
               </label>
               <input
                 type="text"
@@ -338,7 +338,7 @@ export default function AdminCreateOfficerModal({
           {/* Email */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Email *
+              อีเมล *
             </label>
             <input
               type="email"
@@ -354,7 +354,7 @@ export default function AdminCreateOfficerModal({
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-300">
-                Password *
+                รหัสผ่าน *
               </label>
               <button
                 type="button"
@@ -421,7 +421,7 @@ export default function AdminCreateOfficerModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Cert Name
+                ชื่อ CERT
               </label>
               <Dropdown
                 options={certOptions}
@@ -433,7 +433,7 @@ export default function AdminCreateOfficerModal({
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Role Name
+                ตำแหน่ง
               </label>
               <Dropdown
                 options={roleOptions}
@@ -477,14 +477,14 @@ export default function AdminCreateOfficerModal({
               onClick={onClose}
               className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
             >
-              Cancel
+              ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSaving}
               className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
             >
-              {isSaving ? "Creating..." : "+ Add Officer"}
+              {isSaving ? "กำลังสร้าง..." : "+ เพิ่มผู้ใช้"}
             </button>
           </div>
         </form>

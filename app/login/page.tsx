@@ -28,7 +28,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error || "Login failed. Invalid credentials.");
+        setError(data.error || "เข้าสู่ระบบไม่สำเร็จ ข้อมูลประจำตัวไม่ถูกต้อง");
         setLoading(false);
         return;
       }
@@ -36,7 +36,7 @@ export default function LoginPage() {
       window.location.href = "/";
     } catch (err) {
       console.error("Login submission error:", err);
-      setError("An unexpected error occurred. Please try again.");
+      setError("เกิดข้อผิดพลาด โปรดลองอีกครั้ง");
       setLoading(false);
     }
   };
@@ -109,7 +109,7 @@ export default function LoginPage() {
             Officer Phonebook
           </h1>
           <p className="mt-1 text-xs text-indigo-200/70">
-            Enter your credentials to access the directory
+            เข้าสู่ระบบเพื่อใช้งานสมุดโทรศัพท์
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="block text-xs font-semibold text-indigo-100/80"
               >
-                Email Address
+                อีเมล
               </label>
               <input
                 id="email"
@@ -148,7 +148,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="block text-xs font-semibold text-indigo-100/80"
               >
-                Password
+                รหัสผ่าน
               </label>
               <div className="relative mt-1.5">
                 <input
@@ -185,7 +185,7 @@ export default function LoginPage() {
                   href="/forgot-password"
                   className="text-xs font-medium text-indigo-300 transition-colors hover:text-indigo-200"
                 >
-                  Forgot password?
+                  ลืมรหัสผ่าน?
                 </Link>
               </div>
             </div>
@@ -197,18 +197,18 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:from-indigo-400 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 active:scale-[0.98] disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </button>
         </form>
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-indigo-200/50">
-          Authorized personnel only. Need help?{" "}
+          สำหรับเจ้าหน้าที่เท่านั้น หากต้องการความช่วยเหลือ{" "}
           <Link
             href="/contact"
             className="font-medium text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
           >
-            Contact Admin
+            ติดต่อผู้ดูแลระบบ
           </Link>
         </p>
       </div>

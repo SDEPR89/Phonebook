@@ -75,7 +75,7 @@ export default function AdminEditCertModal({
 
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
-      setError(data.error || `Failed to delete CERT (${res.status})`);
+      setError(data.error || `ไม่สามารถลบ CERT ได้ (${res.status})`);
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred while deleting.");
@@ -101,7 +101,7 @@ export default function AdminEditCertModal({
       !logoFile;
 
     if (isUnchanged) {
-      setInfoMessage("Nothing changed.");
+      setInfoMessage("ไม่มีการเปลี่ยนแปลง");
       return;
     }
 
@@ -142,7 +142,7 @@ export default function AdminEditCertModal({
 
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
-      setError(data.error || `Failed to update CERT (${res.status})`);
+      setError(data.error || `ไม่สามารถอัปเดต CERT ได้ (${res.status})`);
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred while saving.");
@@ -165,9 +165,9 @@ export default function AdminEditCertModal({
         </button>
 
         <div className="mb-4">
-          <h2 className="text-xl font-bold">Edit CERT Info</h2>
+          <h2 className="text-xl font-bold">แก้ไขข้อมูล CERT</h2>
           <p className="text-xs text-slate-400">
-            Update CERT information or remove CERT.
+            แก้ไขข้อมูล CERT หรือลบ CERT
           </p>
         </div>
 
@@ -434,14 +434,14 @@ export default function AdminEditCertModal({
             <div>
               {showConfirmDelete ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-400">Are you sure?</span>
+                  <span className="text-xs font-medium text-slate-400">คุณแน่ใจหรือไม่?</span>
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting || isSaving}
                     className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
                   >
-                    {isDeleting ? "..." : "Yes"}
+                    {isDeleting ? "..." : "ใช่"}
                   </button>
                   <button
                     type="button"
@@ -449,7 +449,7 @@ export default function AdminEditCertModal({
                     disabled={isDeleting || isSaving}
                     className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50"
                   >
-                    No
+                    ไม่
                   </button>
                 </div>
               ) : (
@@ -459,7 +459,7 @@ export default function AdminEditCertModal({
                   disabled={isDeleting || isSaving}
                   className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-900/50 disabled:opacity-50"
                 >
-                  Delete
+                  ลบ
                 </button>
               )}
             </div>
@@ -471,14 +471,14 @@ export default function AdminEditCertModal({
                 disabled={isDeleting || isSaving}
                 className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
               >
-                Cancel
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 disabled={isSaving || isDeleting}
                 className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
               </button>
             </div>
           </div>

@@ -246,7 +246,7 @@ export default function HomePage() {
             className={`text-3xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-5xl transition-transform duration-500 ease-out origin-center ${isNearCenter ? "scale-105" : "scale-100"
               }`}
           >
-            CERT Community Phonebook
+            สมุดโทรศัพท์ CERT
           </h1>
 
           {/* Conditional Search Bar / Loading State */}
@@ -258,7 +258,7 @@ export default function HomePage() {
             </div>
           ) : (
             <p className="max-w-md rounded-2xl border border-white/40 bg-white/90 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur-md shadow-lg">
-              Please sign in to search the community phonebook.
+              กรุณาเข้าสู่ระบบเพื่อค้นหาสมุดโทรศัพท์
             </p>
           )}
         </div>
@@ -310,7 +310,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-indigo-200/60">No CERTs found.</p>
+              <p className="text-sm text-indigo-200/60">ไม่พบข้อมูล CERT</p>
             )}
           </div>
         )}

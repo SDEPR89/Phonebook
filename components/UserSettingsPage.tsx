@@ -89,7 +89,7 @@ export default function UserSettingsPage() {
     if (isUnchanged) {
       setStatusMessage({
         type: "info",
-        text: "Nothing changed.",
+        text: "ไม่มีการเปลี่ยนแปลง",
       });
       return;
     }
@@ -119,14 +119,14 @@ export default function UserSettingsPage() {
         if (data.unchanged) {
           setStatusMessage({
             type: "info",
-            text: "Nothing changed.",
+            text: "ไม่มีการเปลี่ยนแปลง",
           });
           return;
         }
 
         setStatusMessage({
           type: "success",
-          text: "Profile updated successfully! Redirecting...",
+          text: "อัปเดตโปรไฟล์สำเร็จ! กำลังเปลี่ยนหน้า...",
         });
         router.refresh();
         setTimeout(() => {
@@ -136,14 +136,14 @@ export default function UserSettingsPage() {
         const data = await res.json();
         setStatusMessage({
           type: "error",
-          text: data.error || "Failed to update profile.",
+          text: data.error || "ไม่สามารถอัปเดตโปรไฟล์ได้",
         });
       }
     } catch (err) {
       console.error("Error saving profile:", err);
       setStatusMessage({
         type: "error",
-        text: "Something went wrong. Please try again.",
+        text: "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
       });
     } finally {
       setIsSaving(false);
@@ -161,7 +161,7 @@ export default function UserSettingsPage() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
-        Loading settings...
+        กำลังโหลดการตั้งค่า...
       </main>
     );
   }
@@ -173,14 +173,14 @@ export default function UserSettingsPage() {
         onClick={() => router.push(backDestination)}
         className="fixed top-6 left-6 flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs font-semibold text-slate-300 shadow-lg backdrop-blur-md transition hover:border-slate-700 hover:bg-slate-800 hover:text-white cursor-pointer"
       >
-        {isAdmin ? "← Back to Admin" : "← Back to Search"}
+        {isAdmin ? "← กลับไปยังหน้าผู้ดูแลระบบ" : "← กลับไปยังหน้าค้นหา"}
       </button>
 
       <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
         <div className="mb-4">
-          <h2 className="text-xl font-bold text-slate-100">Edit User Profile</h2>
+          <h2 className="text-xl font-bold text-slate-100">แก้ไขโปรไฟล์ผู้ใช้</h2>
           <p className="text-xs text-slate-400">
-            Update account information.
+            อัปเดตข้อมูลบัญชี
           </p>
         </div>
 
@@ -202,7 +202,7 @@ export default function UserSettingsPage() {
           {/* Avatar Upload */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Profile Avatar
+              รูปโปรไฟล์
             </label>
             <div
               onDragOver={(e) => {
@@ -243,8 +243,8 @@ export default function UserSettingsPage() {
               ) : (
                 <div className="text-center">
                   <p className="text-xs text-slate-400">
-                    Drag & drop image here, or{" "}
-                    <span className="text-blue-400 underline">click to browse</span>
+                    ลากและวางรูปภาพที่นี่ หรือ{" "}
+                    <span className="text-blue-400 underline">คลิกเพื่อเลือกไฟล์</span>
                   </p>
                 </div>
               )}
@@ -255,26 +255,26 @@ export default function UserSettingsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Name *
+                ชื่อ-นามสกุล *
               </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Name *"
+                placeholder="ชื่อ-นามสกุล *"
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Phone
+                เบอร์โทรศัพท์
               </label>
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone"
+                placeholder="เบอร์โทรศัพท์"
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
               />
             </div>
@@ -283,14 +283,14 @@ export default function UserSettingsPage() {
           {/* Email */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              Email *
+              อีเมล *
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email *"
+              placeholder="อีเมล *"
               className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500"
             />
           </div>
@@ -298,14 +298,14 @@ export default function UserSettingsPage() {
           {/* New Password */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-300">
-              New Password (Optional)
+              รหัสผ่านใหม่ (ไม่บังคับ)
             </label>
             <div className="relative">
               <input
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Leave blank to keep current password"
+                placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 pl-3.5 pr-10 py-2 text-sm text-slate-100 outline-none transition focus:border-blue-500 font-mono"
               />
               <button
@@ -332,23 +332,23 @@ export default function UserSettingsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-400">
-                Cert (Fixed)
+                CERT (ไม่สามารถแก้ไขได้)
               </label>
               <input
                 type="text"
                 disabled
-                value={profile?.certName || "No Cert"}
+                value={profile?.certName || "ไม่มี CERT"}
                 className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-400">
-                Role (Fixed)
+                ตำแหน่ง (ไม่สามารถแก้ไขได้)
               </label>
               <input
                 type="text"
                 disabled
-                value={profile?.roles?.join(", ") || "No Role"}
+                value={profile?.roles?.join(", ") || "ไม่มีตำแหน่ง"}
                 className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
               />
             </div>
@@ -357,13 +357,13 @@ export default function UserSettingsPage() {
           {/* Created At & Updated At Metadata */}
           <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-800/80 bg-slate-950/30 p-3 text-xs">
             <div>
-              <span className="block text-slate-500 font-medium">Created At</span>
+              <span className="block text-slate-500 font-medium">วันที่สร้าง</span>
               <span className="text-slate-300 font-mono">
                 {formatDate(profile?.createdAt)}
               </span>
             </div>
             <div>
-              <span className="block text-slate-500 font-medium">Updated At</span>
+              <span className="block text-slate-500 font-medium">อัปเดตล่าสุด</span>
               <span className="text-slate-300 font-mono">
                 {formatDate(profile?.updatedAt)}
               </span>
@@ -377,14 +377,14 @@ export default function UserSettingsPage() {
                 onClick={() => router.push(backDestination)}
                 className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 cursor-pointer"
               >
-                Cancel
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
                 className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50 cursor-pointer"
               >
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
               </button>
             </div>
           </div>
