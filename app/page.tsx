@@ -27,7 +27,7 @@ export default function HomePage() {
   const [isLoadingCerts, setIsLoadingCerts] = useState(true);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
-  // Fetch user profile and authentication status
+// Fetch user profile and authentication status
   useEffect(() => {
     fetch("/api/user/profile", { cache: "no-store" })
       .then((res) => {
@@ -41,10 +41,14 @@ export default function HomePage() {
       })
       .then((data) => {
         if (data) {
+          // DEBUG: Open browser console (F12) to see what your API actually returns
+          console.log("Profile Data Payload:", data);
+
           const extractedRole =
             data.role ||
             data.user?.role ||
             data.roles?.[0] ||
+            data.user?.roles?.[0] || // Added check for nested user roles array
             null;
 
           setUserRole(extractedRole);
@@ -315,9 +319,9 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 7. Non-sticky Admin Page Button (Positioned Below Content Blocks) */}
+        {/* 7. Non-sticky Admin Page Button */}
         {!isLoadingAuth && isAdmin && (
-          <div className="flex w-full justify-end">
+          <div className="mt-6 flex w-full justify-end">
             <Link
               href="/admin"
               className="flex items-center gap-2 rounded-full border border-indigo-900/60 bg-slate-900/90 px-6 py-3 text-sm font-semibold text-indigo-100 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-indigo-950 hover:text-white hover:border-indigo-700/80 active:scale-95"
