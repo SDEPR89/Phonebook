@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { officers, loginCredentials } from "@/db/schema";
-import { eq, ilike } from "drizzle-orm";
+import { eq, ilike, isNull, and } from "drizzle-orm";
 import { setSessionCookie } from "@/app/lib/auth";
 import { hashPassword, verifyPassword } from "@/app/lib/crypto";
 
@@ -21,11 +21,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Find officer by email (case-insensitive)
+    // 1. Find officer by email (case-insensitive); reject soft-deleted accounts
     const [officer] = await db
       .select()
       .from(officers)
-      .where(ilike(officers.email, identifier))
+      .where(and(ilike(officers.email, identifier), isNull(officers.deletedAt)))
       .limit(1);
 
     if (!officer) {

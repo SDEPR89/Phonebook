@@ -44,6 +44,7 @@ export default async function AdminPage() {
     }
 
     const dbOfficers = await db.query.officers.findMany({
+      where: (o, { isNull }) => isNull(o.deletedAt),
       with: {
         officerCerts: {
           with: {

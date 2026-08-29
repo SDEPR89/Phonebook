@@ -50,11 +50,13 @@ export default function AdminEditOfficerModal({
   const [email, setEmail] = useState(officer.email || "");
   const [certName, setCertName] = useState(officer.certName || "");
   const [roleName, setRoleName] = useState(officer.roleName || "");
-  const [systemRole, setSystemRole] = useState<string>(officer.systemRole || "officer");
+  const [systemRole, setSystemRole] = useState<string>(
+    officer.systemRole || "officer",
+  );
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    officer.profileUrl || null
+    officer.profileUrl || null,
   );
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,8 +67,12 @@ export default function AdminEditOfficerModal({
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
-  const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
+  const [certOptions, setCertOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [roleOptions, setRoleOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   useEffect(() => {
@@ -89,7 +95,11 @@ export default function AdminEditOfficerModal({
       const initialCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
       if (officer.certName && officer.certName.trim()) {
         const current = officer.certName.trim();
-        if (!initialCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+        if (
+          !initialCerts.some(
+            (c) => c.name.toLowerCase() === current.toLowerCase(),
+          )
+        ) {
           initialCerts.unshift({ id: "curr-" + current, name: current });
         }
       }
@@ -97,7 +107,10 @@ export default function AdminEditOfficerModal({
 
       const initialRoles: { id: string; name: string }[] = [];
       if (officer.roleName && officer.roleName.trim()) {
-        initialRoles.push({ id: "curr-" + officer.roleName.trim(), name: officer.roleName.trim() });
+        initialRoles.push({
+          id: "curr-" + officer.roleName.trim(),
+          name: officer.roleName.trim(),
+        });
       }
       setRoleOptions(initialRoles);
 
@@ -107,15 +120,23 @@ export default function AdminEditOfficerModal({
             fetch("/api/certs"),
             fetch("/api/roles"),
           ]);
-          
+
           if (certsRes.ok) {
             const data = await certsRes.json();
-            const certList: any[] = Array.isArray(data) ? data : data.certs || [];
-            
+            const certList: any[] = Array.isArray(data)
+              ? data
+              : data.certs || [];
+
             let mappedCerts = certList
               .map((item) => ({
                 id: String(item.id || item.shortName || item.short_name || ""),
-                name: (item.shortName || item.short_name || item.fullName || item.name || "").trim(),
+                name: (
+                  item.shortName ||
+                  item.short_name ||
+                  item.fullName ||
+                  item.name ||
+                  ""
+                ).trim(),
               }))
               .filter((item) => item.name && item.name !== "Select Cert Name");
 
@@ -125,7 +146,11 @@ export default function AdminEditOfficerModal({
 
             if (officer.certName && officer.certName.trim()) {
               const current = officer.certName.trim();
-              if (!mappedCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+              if (
+                !mappedCerts.some(
+                  (c) => c.name.toLowerCase() === current.toLowerCase(),
+                )
+              ) {
                 mappedCerts.unshift({ id: "curr-" + current, name: current });
               }
             }
@@ -135,8 +160,10 @@ export default function AdminEditOfficerModal({
 
           if (rolesRes.ok) {
             const data = await rolesRes.json();
-            const roleList: any[] = Array.isArray(data) ? data : data.roles || [];
-            
+            const roleList: any[] = Array.isArray(data)
+              ? data
+              : data.roles || [];
+
             const uniqueRoles = new Map<string, { id: string; name: string }>();
             roleList.forEach((item) => {
               const rName = (item.name || "").trim();
@@ -301,7 +328,8 @@ export default function AdminEditOfficerModal({
           email: email.trim(),
           certName: certName.trim(),
           roleName: roleName.trim(),
-          systemRole: viewerRole === "superadmin" ? systemRole : officer.systemRole,
+          systemRole:
+            viewerRole === "superadmin" ? systemRole : officer.systemRole,
           profileUrl: avatarPreview || officer.profileUrl,
         });
         onClose();
@@ -338,7 +366,8 @@ export default function AdminEditOfficerModal({
 
         {isProtectedTarget && (
           <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-400">
-            🔒 Super Admin accounts can only be modified by Super Administrators.
+            🔒 Super Admin accounts can only be modified by Super
+            Administrators.
           </div>
         )}
 
@@ -372,13 +401,15 @@ export default function AdminEditOfficerModal({
                   handleFile(e.dataTransfer.files[0]);
                 }
               }}
-              onClick={() => !isProtectedTarget && fileInputRef.current?.click()}
+              onClick={() =>
+                !isProtectedTarget && fileInputRef.current?.click()
+              }
               className={`flex items-center justify-between rounded-xl border-2 border-dashed p-3 transition ${
                 isDragging
                   ? "border-blue-500 bg-blue-500/10"
                   : isProtectedTarget
-                  ? "border-slate-800 bg-slate-950/60 cursor-not-allowed opacity-60"
-                  : "border-slate-800 bg-slate-950/60 cursor-pointer hover:border-slate-700"
+                    ? "border-slate-800 bg-slate-950/60 cursor-not-allowed opacity-60"
+                    : "border-slate-800 bg-slate-950/60 cursor-pointer hover:border-slate-700"
               }`}
             >
               <input
@@ -484,7 +515,7 @@ export default function AdminEditOfficerModal({
                 onChange={(e) => setSystemRole(e.target.value)}
                 className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <option value="officer">User (Officer)</option>
+                <option value="officer">Officer</option>
                 <option value="admin">Administrator</option>
                 <option value="superadmin">Super Administrator</option>
               </select>
@@ -496,8 +527,8 @@ export default function AdminEditOfficerModal({
                   systemRole === "superadmin"
                     ? "Super Administrator"
                     : systemRole === "admin"
-                    ? "Administrator"
-                    : "User (Officer)"
+                      ? "Administrator"
+                      : "Officer"
                 }
                 className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3.5 py-2 text-sm text-slate-400 cursor-not-allowed"
               />
@@ -508,7 +539,9 @@ export default function AdminEditOfficerModal({
             <div>
               {showConfirmDelete ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-400">คุณแน่ใจหรือไม่?</span>
+                  <span className="text-xs font-medium text-slate-400">
+                    คุณแน่ใจหรือไม่?
+                  </span>
                   <button
                     type="button"
                     onClick={handleDelete}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Dropdown from "@/components/Dropdown";
 
 type ProfileData = {
   id: string;
@@ -28,6 +29,12 @@ export default function UserSettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Cert & Role (editable for superadmin only)
+  const [certName, setCertName] = useState("");
+  const [roleName, setRoleName] = useState("");
+  const [certOptions, setCertOptions] = useState<{ id: string; name: string }[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{ id: string; name: string }[]>([]);
+
   // Avatar states
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -42,8 +49,8 @@ export default function UserSettingsPage() {
     text: string;
   } | null>(null);
 
-  const isAdmin =
-    profile?.systemRole === "admin" || profile?.systemRole === "superadmin";
+  const isSuperAdmin = profile?.systemRole === "superadmin";
+  const isAdmin = profile?.systemRole === "admin" || isSuperAdmin;
   const backDestination = isAdmin ? "/admin" : "/";
 
   useEffect(() => {
@@ -56,6 +63,8 @@ export default function UserSettingsPage() {
           setName(data.name || "");
           setEmail(data.email || "");
           setPhone(data.phone || "");
+          setCertName(data.certName || "");
+          setRoleName(data.roles?.[0] || "");
           setAvatarPreview(data.avatarUrl || null);
         }
       } catch (err) {
@@ -66,6 +75,49 @@ export default function UserSettingsPage() {
     }
     fetchProfile();
   }, []);
+
+  // Fetch cert & role options for superadmin
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+
+    const fetchOptions = async () => {
+      try {
+        const [certsRes, rolesRes] = await Promise.all([
+          fetch("/api/certs"),
+          fetch("/api/roles"),
+        ]);
+
+        if (certsRes.ok) {
+          const data = await certsRes.json();
+          const certList: any[] = Array.isArray(data) ? data : data.certs || [];
+          const mapped = certList
+            .map((item) => ({
+              id: String(item.id || item.shortName || ""),
+              name: (item.shortName || item.short_name || item.fullName || item.name || "").trim(),
+            }))
+            .filter((item) => item.name);
+          setCertOptions(mapped.length > 0 ? mapped : []);
+        }
+
+        if (rolesRes.ok) {
+          const data = await rolesRes.json();
+          const roleList: any[] = Array.isArray(data) ? data : data.roles || [];
+          const uniqueRoles = new Map<string, { id: string; name: string }>();
+          roleList.forEach((item) => {
+            const rName = (item.name || "").trim();
+            if (rName && !uniqueRoles.has(rName.toLowerCase())) {
+              uniqueRoles.set(rName.toLowerCase(), { id: String(item.id || rName), name: rName });
+            }
+          });
+          setRoleOptions(Array.from(uniqueRoles.values()));
+        }
+      } catch (err) {
+        console.error("Failed to fetch cert/role options:", err);
+      }
+    };
+
+    fetchOptions();
+  }, [isSuperAdmin]);
 
   const handleFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
@@ -78,11 +130,15 @@ export default function UserSettingsPage() {
     e.preventDefault();
     if (!name || !email) return;
 
+    const origCertName = profile?.certName || "";
+    const origRoleName = profile?.roles?.[0] || "";
+
     // Check if any fields actually changed
     const isUnchanged =
       name.trim() === (profile?.name || "").trim() &&
       email.trim() === (profile?.email || "").trim() &&
       phone.trim() === (profile?.phone || "").trim() &&
+      (!isSuperAdmin || (certName.trim() === origCertName.trim() && roleName.trim() === origRoleName.trim())) &&
       !avatarFile &&
       !newPassword.trim();
 
@@ -101,6 +157,10 @@ export default function UserSettingsPage() {
     formData.append("name", name);
     formData.append("email", email);
     formData.append("phone", phone);
+    if (isSuperAdmin) {
+      formData.append("certName", certName.trim());
+      formData.append("roleName", roleName.trim());
+    }
     if (newPassword.trim()) {
       formData.append("newPassword", newPassword.trim());
     }
@@ -328,29 +388,49 @@ export default function UserSettingsPage() {
             </div>
           </div>
 
-          {/* Cert & Role (Fixed/Unchanged) */}
+          {/* Cert & Role */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-400">
-                CERT (ไม่สามารถแก้ไขได้)
+              <label className={`mb-1 block text-xs font-semibold ${isSuperAdmin ? "text-slate-300" : "text-slate-500"}`}>
+                CERT {isSuperAdmin ? "" : "(ไม่สามารถแก้ไขได้)"}
               </label>
-              <input
-                type="text"
-                disabled
-                value={profile?.certName || "ไม่มี CERT"}
-                className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
-              />
+              {isSuperAdmin ? (
+                <Dropdown
+                  options={certOptions}
+                  value={certName}
+                  onChange={setCertName}
+                  placeholder="เลือก CERT"
+                  disabled={isSaving}
+                />
+              ) : (
+                <input
+                  type="text"
+                  disabled
+                  value={profile?.certName || "ไม่มี CERT"}
+                  className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
+                />
+              )}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-400">
-                ตำแหน่ง (ไม่สามารถแก้ไขได้)
+              <label className={`mb-1 block text-xs font-semibold ${isSuperAdmin ? "text-slate-300" : "text-slate-500"}`}>
+                ตำแหน่ง {isSuperAdmin ? "" : "(ไม่สามารถแก้ไขได้)"}
               </label>
-              <input
-                type="text"
-                disabled
-                value={profile?.roles?.join(", ") || "ไม่มีตำแหน่ง"}
-                className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
-              />
+              {isSuperAdmin ? (
+                <Dropdown
+                  options={roleOptions}
+                  value={roleName}
+                  onChange={setRoleName}
+                  placeholder="เลือกตำแหน่ง"
+                  disabled={isSaving}
+                />
+              ) : (
+                <input
+                  type="text"
+                  disabled
+                  value={profile?.roles?.join(", ") || "ไม่มีตำแหน่ง"}
+                  className="w-full cursor-not-allowed rounded-xl border border-slate-800/60 bg-slate-950/40 px-3.5 py-2 text-sm text-slate-500 outline-none"
+                />
+              )}
             </div>
           </div>
 

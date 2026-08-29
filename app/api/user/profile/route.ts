@@ -103,6 +103,12 @@ export async function PUT(request: NextRequest) {
     const phone = formData.get("phone") as string;
     const avatarFile = formData.get("avatar") as File | null;
 
+    // Cert & Role only accepted from superadmin
+    const certNameRaw = session.role === "superadmin" ? (formData.get("certName") as string | null) : null;
+    const roleNameRaw = session.role === "superadmin" ? (formData.get("roleName") as string | null) : null;
+    const newCertName = certNameRaw?.trim() || "";
+    const newRoleName = roleNameRaw?.trim() || "";
+
     if (!name || !email) {
       return NextResponse.json(
         { error: "Name and Email are required." },
@@ -194,6 +200,94 @@ export async function PUT(request: NextRequest) {
             officerId: officer.id,
             phoneNumber: trimmedPhone,
           });
+        }
+      }
+
+      // Cert & Role update — superadmin only
+      if (session.role === "superadmin" && (certNameRaw !== null || roleNameRaw !== null)) {
+        // Fetch current cert assignment
+        const [existingOC] = await tx
+          .select({ junctionId: officerCerts.id, certShortName: certs.shortName })
+          .from(officerCerts)
+          .leftJoin(certs, eq(certs.id, officerCerts.certId))
+          .where(eq(officerCerts.officerId, officer.id))
+          .limit(1);
+
+        const oldCertName = existingOC?.certShortName || "";
+        let junctionId: string | null = existingOC?.junctionId || null;
+
+        if (certNameRaw !== null && newCertName !== oldCertName) {
+          changes.push({ field: "Cert", old: oldCertName, new: newCertName });
+
+          if (newCertName) {
+            // Find or use existing cert
+            const [existingCertRecord] = await tx
+              .select({ id: certs.id })
+              .from(certs)
+              .where(eq(certs.shortName, newCertName))
+              .limit(1);
+
+            const targetCertId = existingCertRecord?.id;
+            if (targetCertId) {
+              if (junctionId) {
+                await tx
+                  .update(officerCerts)
+                  .set({ certId: targetCertId, updatedAt: new Date() })
+                  .where(eq(officerCerts.id, junctionId));
+              } else {
+                const [newJunction] = await tx
+                  .insert(officerCerts)
+                  .values({ officerId: officer.id, certId: targetCertId })
+                  .returning({ id: officerCerts.id });
+                junctionId = newJunction.id;
+              }
+            }
+          }
+        }
+
+        if (roleNameRaw !== null && junctionId) {
+          // Fetch current role
+          const [existingOCR] = await tx
+            .select({ roleName: roles.name })
+            .from(officerCertRoles)
+            .leftJoin(roles, eq(roles.id, officerCertRoles.roleId))
+            .where(eq(officerCertRoles.officerCertId, junctionId))
+            .limit(1);
+
+          const oldRoleName = existingOCR?.roleName || "";
+
+          if (newRoleName !== oldRoleName) {
+            changes.push({ field: "Role", old: oldRoleName, new: newRoleName });
+
+            if (newRoleName) {
+              let [targetRole] = await tx
+                .select({ id: roles.id })
+                .from(roles)
+                .where(eq(roles.name, newRoleName))
+                .limit(1);
+
+              if (!targetRole) {
+                [targetRole] = await tx
+                  .insert(roles)
+                  .values({ name: newRoleName })
+                  .returning({ id: roles.id });
+              }
+
+              // Replace role assignment
+              await tx
+                .delete(officerCertRoles)
+                .where(eq(officerCertRoles.officerCertId, junctionId));
+
+              await tx
+                .insert(officerCertRoles)
+                .values({ officerCertId: junctionId, roleId: targetRole.id });
+            } else {
+              // Clear role
+              await tx
+                .delete(officerCertRoles)
+                .where(eq(officerCertRoles.officerCertId, junctionId));
+            }
+          }
         }
       }
 

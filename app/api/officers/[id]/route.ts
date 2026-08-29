@@ -12,6 +12,7 @@ import {
   roles,
   certUnits,
   loginCredentials,
+  auditLogs,
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
 import { isValidUuid, isValidEmail } from "@/app/lib/validators";
@@ -316,6 +317,36 @@ export async function DELETE(
         return { error: "Only Super Admins can delete Super Admin accounts.", status: 403 };
       }
 
+      // Fetch full officer record for the audit log
+      const [fullOfficer] = await tx
+        .select()
+        .from(officers)
+        .where(eq(officers.id, officerId))
+        .limit(1);
+
+      // Fetch actor name for the audit log
+      const [actor] = await tx
+        .select()
+        .from(officers)
+        .where(eq(officers.id, session.userId))
+        .limit(1);
+
+      await tx.insert(auditLogs).values({
+        officerId: session.userId,
+        officerName: actor?.name || "Admin",
+        action: "DELETED",
+        changes: [
+          {
+            field: "Deleted Officer",
+            old: fullOfficer?.name || "Unknown Officer",
+            new: "Removed",
+          },
+          ...(fullOfficer?.email
+            ? [{ field: "Email", old: fullOfficer.email, new: "Removed" }]
+            : []),
+        ],
+      });
+
       const now = new Date();
 
       // Soft delete officer
@@ -336,6 +367,10 @@ export async function DELETE(
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
+
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/admin");
+    revalidatePath("/admin/history");
 
     return NextResponse.json({ success: true });
   } catch (err) {

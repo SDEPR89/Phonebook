@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
 import { officers, officerCerts, certs, units, areas, roles, officerCertRoles, auditLogs, certUnits, loginCredentials } from "@/db/schema";
-import { eq, ilike } from "drizzle-orm";
+import { eq, ilike, isNull, and } from "drizzle-orm";
 import { isValidEmail } from "@/app/lib/validators";
 
 export async function POST(req: Request) {
@@ -50,11 +50,11 @@ export async function POST(req: Request) {
     }
 
     const result = await db.transaction(async (tx) => {
-      // 1. Fetch existing officer
+      // 1. Fetch existing officer (exclude soft-deleted)
       const existingOfficer = await tx
         .select()
         .from(officers)
-        .where(eq(officers.id, officerId))
+        .where(and(eq(officers.id, officerId), isNull(officers.deletedAt)))
         .limit(1);
 
       if (existingOfficer.length === 0) {
