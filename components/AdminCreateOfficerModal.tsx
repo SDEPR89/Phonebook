@@ -94,8 +94,10 @@ export default function AdminCreateOfficerModal({
       }
       setAvatarPreview(null);
 
+      // Populate default cert options immediately so dropdown is usable without delay
+      setCertOptions(DEFAULT_CERTS.map((c) => ({ id: c, name: c })));
+
       const fetchOptions = async () => {
-        setIsLoadingOptions(true);
         try {
           const [certsRes, rolesRes] = await Promise.all([
             fetch("/api/certs"),
@@ -139,8 +141,6 @@ export default function AdminCreateOfficerModal({
           }
         } catch (err) {
           console.error("Failed to fetch options", err);
-        } finally {
-          setIsLoadingOptions(false);
         }
       };
       fetchOptions();
@@ -428,7 +428,7 @@ export default function AdminCreateOfficerModal({
                 value={cert}
                 onChange={setCert}
                 placeholder="e.g. ThaiCERT"
-                disabled={isLoadingOptions}
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -440,7 +440,7 @@ export default function AdminCreateOfficerModal({
                 value={role}
                 onChange={setRole}
                 placeholder="e.g. Analyst"
-                disabled={isLoadingOptions}
+                disabled={isSaving}
               />
             </div>
           </div>

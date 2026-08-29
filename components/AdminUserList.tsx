@@ -110,7 +110,7 @@ export default function AdminUserList({
             const roleInfo =
               ROLE_LABELS[officer.systemRole] || ROLE_LABELS.officer;
             const isProtected =
-              officer.systemRole === "superadmin" && viewerRole !== "superadmin";
+              officer.systemRole !== "officer" && viewerRole !== "superadmin";
 
             return (
               <div
@@ -148,7 +148,7 @@ export default function AdminUserList({
                   {isProtected ? (
                     <span
                       className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-1.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
-                      title="Super Admin accounts can only be edited by Super Admins"
+                      title="Admin and Super Admin accounts can only be edited by Super Administrators"
                     >
                       Protected
                     </span>

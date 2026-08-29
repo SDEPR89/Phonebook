@@ -85,40 +85,53 @@ export default function AdminEditOfficerModal({
       setInfoMessage(null);
       setShowConfirmDelete(false);
 
+      // Populate default options immediately so dropdowns are usable without delay
+      const initialCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
+      if (officer.certName && officer.certName.trim()) {
+        const current = officer.certName.trim();
+        if (!initialCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+          initialCerts.unshift({ id: "curr-" + current, name: current });
+        }
+      }
+      setCertOptions(initialCerts);
+
+      const initialRoles: { id: string; name: string }[] = [];
+      if (officer.roleName && officer.roleName.trim()) {
+        initialRoles.push({ id: "curr-" + officer.roleName.trim(), name: officer.roleName.trim() });
+      }
+      setRoleOptions(initialRoles);
+
       const fetchOptions = async () => {
-        setIsLoadingOptions(true);
         try {
           const [certsRes, rolesRes] = await Promise.all([
             fetch("/api/certs"),
             fetch("/api/roles"),
           ]);
           
-          let mappedCerts: { id: string; name: string }[] = [];
-          
           if (certsRes.ok) {
             const data = await certsRes.json();
             const certList: any[] = Array.isArray(data) ? data : data.certs || [];
             
-            mappedCerts = certList
+            let mappedCerts = certList
               .map((item) => ({
                 id: String(item.id || item.shortName || item.short_name || ""),
                 name: (item.shortName || item.short_name || item.fullName || item.name || "").trim(),
               }))
               .filter((item) => item.name && item.name !== "Select Cert Name");
-          }
 
-          if (mappedCerts.length === 0) {
-            mappedCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
-          }
-
-          if (officer.certName && officer.certName.trim()) {
-            const current = officer.certName.trim();
-            if (!mappedCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
-              mappedCerts.unshift({ id: "curr-" + current, name: current });
+            if (mappedCerts.length === 0) {
+              mappedCerts = DEFAULT_CERTS.map((c) => ({ id: c, name: c }));
             }
-          }
 
-          setCertOptions(mappedCerts);
+            if (officer.certName && officer.certName.trim()) {
+              const current = officer.certName.trim();
+              if (!mappedCerts.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+                mappedCerts.unshift({ id: "curr-" + current, name: current });
+              }
+            }
+
+            setCertOptions(mappedCerts);
+          }
 
           if (rolesRes.ok) {
             const data = await rolesRes.json();
@@ -148,9 +161,7 @@ export default function AdminEditOfficerModal({
             setRoleOptions(Array.from(uniqueRoles.values()));
           }
         } catch (err) {
-          console.error("Failed to fetch certs", err);
-        } finally {
-          setIsLoadingOptions(false);
+          console.error("Failed to fetch certs/roles", err);
         }
       };
       fetchOptions();
@@ -168,8 +179,7 @@ export default function AdminEditOfficerModal({
   if (!isOpen) return null;
 
   const isProtectedTarget =
-    (officer.systemRole === "superadmin" || officer.email === "admin@example.com") &&
-    viewerRole !== "superadmin";
+    officer.systemRole !== "officer" && viewerRole !== "superadmin";
 
   const handleFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
@@ -445,7 +455,7 @@ export default function AdminEditOfficerModal({
               value={certName}
               onChange={setCertName}
               placeholder="Select Cert Name"
-              disabled={isLoadingOptions || isProtectedTarget}
+              disabled={isProtectedTarget || isSaving || isDeleting}
             />
           </div>
 
@@ -458,7 +468,7 @@ export default function AdminEditOfficerModal({
               value={roleName}
               onChange={setRoleName}
               placeholder="Select Role Name"
-              disabled={isLoadingOptions || isProtectedTarget}
+              disabled={isProtectedTarget || isSaving || isDeleting}
             />
           </div>
 
