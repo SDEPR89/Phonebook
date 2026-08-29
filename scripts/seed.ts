@@ -10,6 +10,7 @@ import {
   roles,
   officerCertRoles,
   dataCorrectionReports,
+  certUnits,
 } from "../db/schema"; // Update path to your schema file
 
 async function seed() {
@@ -130,18 +131,21 @@ async function seed() {
         shortName: "THAICERT",
         fullName: "Thailand Computer Emergency Response Team",
         adminId: adminThaiCert.id,
-        unitId: unitGov.id,
         areaId: areaSecurity.id,
       },
       {
         shortName: "EnergyCERT",
         fullName: "Energy Sector Computer Emergency Response Team",
         adminId: adminEnergyCert.id,
-        unitId: unitCii.id,
         areaId: areaEnergy.id,
       },
     ])
     .returning();
+
+  await db.insert(certUnits).values([
+    { certId: thaiCert.id, unitId: unitGov.id },
+    { certId: energyCert.id, unitId: unitCii.id },
+  ]);
 
   console.log("✅ Certs created with assigned Admins.");
 

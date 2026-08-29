@@ -11,8 +11,10 @@ import {
   officerCertRoles,
   roles,
   certUnits,
+  loginCredentials,
 } from "@/db/schema";
 import { eq, isNull, and } from "drizzle-orm";
+import { isValidUuid, isValidEmail } from "@/app/lib/validators";
 
 //GET officer details with timestamp
 export async function GET(
@@ -21,6 +23,10 @@ export async function GET(
 ) {
   try {
     const { id: officerId } = await params;
+    if (!isValidUuid(officerId)) {
+      return NextResponse.json({ error: "Invalid officer ID format" }, { status: 400 });
+    }
+
     const [officer] = await db
       .select()
       .from(officers)
@@ -60,23 +66,10 @@ export async function PUT(
 
     const { id: officerId } = await params;
 
-    if (!officerId) {
+    if (!isValidUuid(officerId)) {
       return NextResponse.json(
-        { error: "Officer ID required" },
+        { error: "Invalid officer ID format" },
         { status: 400 },
-      );
-    }
-
-    const [targetOfficer] = await db
-      .select({ systemRole: officers.systemRole })
-      .from(officers)
-      .where(eq(officers.id, officerId))
-      .limit(1);
-
-    if (targetOfficer?.systemRole === "superadmin" && session.role !== "superadmin") {
-      return NextResponse.json(
-        { error: "Only Super Admins can modify Super Admin accounts." },
-        { status: 403 }
       );
     }
 
@@ -95,138 +88,192 @@ export async function PUT(
       );
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 },
+      );
+    }
+
     let avatarUrl: string | undefined = undefined;
     if (avatarFile && avatarFile.size > 0) {
       const buffer = Buffer.from(await avatarFile.arrayBuffer());
       avatarUrl = `data:${avatarFile.type};base64,${buffer.toString("base64")}`;
     }
 
-    // 1. Update Officer Details
-    const updatePayload: {
-      name: string;
-      email: string;
-      avatarUrl?: string;
-      updatedAt: Date;
-    } = {
-      name: name.trim(),
-      email: email.trim(),
-      updatedAt: new Date(),
-    };
-    if (avatarUrl !== undefined) {
-      updatePayload.avatarUrl = avatarUrl;
-    }
-
-    await db
-      .update(officers)
-      .set(updatePayload)
-      .where(eq(officers.id, officerId));
-    // 2. Update Phone Number
-    if (phone !== null) {
-      const existingPhone = await db
+    const result = await db.transaction(async (tx) => {
+      const [targetOfficer] = await tx
         .select()
-        .from(phones)
-        .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+        .from(officers)
+        .where(eq(officers.id, officerId))
+        .limit(1);
 
-      if (existingPhone.length > 0) {
-        await db
-          .update(phones)
-          .set({ phoneNumber: phone.trim(), updatedAt: new Date() })
-          .where(eq(phones.id, existingPhone[0].id));
-      } else if (phone.trim()) {
-        await db.insert(phones).values({
-          officerId,
-          phoneNumber: phone.trim(),
-        });
-      }
-    }
-
-    // 3. Update Cert & Role
-    if (certName && certName.trim()) {
-      let [existingCert] = await db
-        .select()
-        .from(certs)
-        .where(eq(certs.shortName, certName.trim()));
-
-      if (!existingCert) {
-        let [defaultUnit] = await db.select().from(units).limit(1);
-        if (!defaultUnit) {
-          [defaultUnit] = await db
-            .insert(units)
-            .values({ name: "General Unit" })
-            .returning();
-        }
-
-        let [defaultArea] = await db.select().from(areas).limit(1);
-        if (!defaultArea) {
-          [defaultArea] = await db
-            .insert(areas)
-            .values({ name: "General Area" })
-            .returning();
-        }
-
-        [existingCert] = await db
-          .insert(certs)
-          .values({
-            shortName: certName.trim(),
-            fullName: certName.trim(),
-            areaId: defaultArea.id,
-          })
-          .returning();
-
-        await db.insert(certUnits).values({
-          certId: existingCert.id,
-          unitId: defaultUnit.id,
-        });
+      if (!targetOfficer) {
+        return { error: "Officer not found", status: 404 };
       }
 
-      const existingOfficerCert = await db
-        .select()
-        .from(officerCerts)
-        .where(eq(officerCerts.officerId, officerId));
-
-      let officerCertId: string;
-      if (existingOfficerCert.length > 0) {
-        officerCertId = existingOfficerCert[0].id;
-        await db
-          .update(officerCerts)
-          .set({ certId: existingCert.id })
-          .where(eq(officerCerts.id, officerCertId));
-      } else {
-        const [newOfficerCert] = await db
-          .insert(officerCerts)
-          .values({ officerId, certId: existingCert.id })
-          .returning();
-        officerCertId = newOfficerCert.id;
+      if (targetOfficer.systemRole === "superadmin" && session.role !== "superadmin") {
+        return { error: "Only Super Admins can modify Super Admin accounts.", status: 403 };
       }
 
-      if (roleName && roleName.trim()) {
-        let [existingRole] = await db
+      const emailChanged = targetOfficer.email !== email.trim();
+
+      // 1. Update Officer Details
+      const updatePayload: {
+        name: string;
+        email: string;
+        avatarUrl?: string;
+        updatedAt: Date;
+      } = {
+        name: name.trim(),
+        email: email.trim(),
+        updatedAt: new Date(),
+      };
+      if (avatarUrl !== undefined) {
+        updatePayload.avatarUrl = avatarUrl;
+      }
+
+      await tx
+        .update(officers)
+        .set(updatePayload)
+        .where(eq(officers.id, officerId));
+
+      // 1.5 Sync loginCredentials username if email changed
+      if (emailChanged) {
+        await tx
+          .update(loginCredentials)
+          .set({ username: email.trim(), updatedAt: new Date() })
+          .where(eq(loginCredentials.officerId, officerId));
+      }
+
+      // 2. Update Phone Number
+      if (phone !== null) {
+        const trimmedPhone = phone.trim();
+        const existingPhone = await tx
           .select()
-          .from(roles)
-          .where(eq(roles.name, roleName.trim()));
+          .from(phones)
+          .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
 
-        if (!existingRole) {
-          [existingRole] = await db
-            .insert(roles)
-            .values({ name: roleName.trim() })
+        if (trimmedPhone === "") {
+          if (existingPhone.length > 0) {
+            await tx
+              .update(phones)
+              .set({ deletedAt: new Date() })
+              .where(eq(phones.id, existingPhone[0].id));
+          }
+        } else if (existingPhone.length > 0) {
+          await tx
+            .update(phones)
+            .set({ phoneNumber: trimmedPhone, updatedAt: new Date() })
+            .where(eq(phones.id, existingPhone[0].id));
+        } else {
+          await tx.insert(phones).values({
+            officerId,
+            phoneNumber: trimmedPhone,
+          });
+        }
+      }
+
+      // 3. Update Cert & Role
+      if (certName && certName.trim()) {
+        let [existingCert] = await tx
+          .select()
+          .from(certs)
+          .where(eq(certs.shortName, certName.trim()));
+
+        if (!existingCert) {
+          let [defaultUnit] = await tx.select().from(units).limit(1);
+          if (!defaultUnit) {
+            [defaultUnit] = await tx
+              .insert(units)
+              .values({ name: "General Unit" })
+              .returning();
+          }
+
+          let [defaultArea] = await tx.select().from(areas).limit(1);
+          if (!defaultArea) {
+            [defaultArea] = await tx
+              .insert(areas)
+              .values({ name: "General Area" })
+              .returning();
+          }
+
+          [existingCert] = await tx
+            .insert(certs)
+            .values({
+              shortName: certName.trim(),
+              fullName: certName.trim(),
+              areaId: defaultArea.id,
+            })
             .returning();
+
+          await tx.insert(certUnits).values({
+            certId: existingCert.id,
+            unitId: defaultUnit.id,
+          });
         }
 
-        // Delete & Re-insert link for composite keys
-        await db
-          .delete(officerCertRoles)
-          .where(eq(officerCertRoles.officerCertId, officerCertId));
+        const existingOfficerCert = await tx
+          .select()
+          .from(officerCerts)
+          .where(eq(officerCerts.officerId, officerId));
 
-        await db.insert(officerCertRoles).values({
-          officerCertId,
-          roleId: existingRole.id,
-        });
+        let officerCertId: string;
+        if (existingOfficerCert.length > 0) {
+          officerCertId = existingOfficerCert[0].id;
+          await tx
+            .update(officerCerts)
+            .set({ certId: existingCert.id })
+            .where(eq(officerCerts.id, officerCertId));
+        } else {
+          const [newOfficerCert] = await tx
+            .insert(officerCerts)
+            .values({ officerId, certId: existingCert.id })
+            .returning();
+          officerCertId = newOfficerCert.id;
+        }
+
+        if (roleName && roleName.trim()) {
+          let [existingRole] = await tx
+            .select()
+            .from(roles)
+            .where(eq(roles.name, roleName.trim()));
+
+          if (!existingRole) {
+            [existingRole] = await tx
+              .insert(roles)
+              .values({ name: roleName.trim() })
+              .returning();
+          }
+
+          // Delete & Re-insert link for composite keys
+          await tx
+            .delete(officerCertRoles)
+            .where(eq(officerCertRoles.officerCertId, officerCertId));
+
+          await tx.insert(officerCertRoles).values({
+            officerCertId,
+            roleId: existingRole.id,
+          });
+        }
       }
+
+      return { success: true };
+    });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Failed to update officer:", err);
+    if (err?.code === "23505" || err?.message?.includes("unique constraint")) {
+      return NextResponse.json(
+        { error: "An officer or phone number with these details already exists." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
@@ -247,31 +294,48 @@ export async function DELETE(
 
     const { id: officerId } = await params;
 
-    const [targetOfficer] = await db
-      .select({ systemRole: officers.systemRole })
-      .from(officers)
-      .where(eq(officers.id, officerId))
-      .limit(1);
-
-    if (targetOfficer?.systemRole === "superadmin" && session.role !== "superadmin") {
+    if (!isValidUuid(officerId)) {
       return NextResponse.json(
-        { error: "Only Super Admins can delete Super Admin accounts." },
-        { status: 403 }
+        { error: "Invalid officer ID format" },
+        { status: 400 },
       );
     }
 
-    const now = new Date();
+    const result = await db.transaction(async (tx) => {
+      const [targetOfficer] = await tx
+        .select({ systemRole: officers.systemRole })
+        .from(officers)
+        .where(eq(officers.id, officerId))
+        .limit(1);
 
-    // Soft delete officer
-    await db
-      .update(officers)
-      .set({ deletedAt: now })
-      .where(eq(officers.id, officerId));
-    // Soft delete linked phone numbers
-    await db
-      .update(phones)
-      .set({ deletedAt: now })
-      .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+      if (!targetOfficer) {
+        return { error: "Officer not found", status: 404 };
+      }
+
+      if (targetOfficer?.systemRole === "superadmin" && session.role !== "superadmin") {
+        return { error: "Only Super Admins can delete Super Admin accounts.", status: 403 };
+      }
+
+      const now = new Date();
+
+      // Soft delete officer
+      await tx
+        .update(officers)
+        .set({ deletedAt: now })
+        .where(eq(officers.id, officerId));
+
+      // Soft delete linked phone numbers
+      await tx
+        .update(phones)
+        .set({ deletedAt: now })
+        .where(and(eq(phones.officerId, officerId), isNull(phones.deletedAt)));
+
+      return { success: true };
+    });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

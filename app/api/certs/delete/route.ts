@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
 import { certs, certUnits, officerCerts, auditLogs, officers } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { isValidUuid } from "@/app/lib/validators";
 
 export async function DELETE(req: Request) {
   try {
@@ -14,51 +15,56 @@ export async function DELETE(req: Request) {
 
     const { certId } = await req.json();
 
-    if (!certId) {
+    if (!certId || !isValidUuid(certId)) {
       return NextResponse.json(
-        { error: "CERT ID is required." },
+        { error: "Valid CERT ID is required." },
         { status: 400 },
       );
     }
 
-    const existingCert = await db
-      .select()
-      .from(certs)
-      .where(eq(certs.id, certId))
-      .limit(1);
+    const result = await db.transaction(async (tx) => {
+      const existingCert = await tx
+        .select()
+        .from(certs)
+        .where(eq(certs.id, certId))
+        .limit(1);
 
-    if (existingCert.length === 0) {
-      return NextResponse.json({ error: "CERT not found." }, { status: 404 });
-    }
+      if (existingCert.length === 0) {
+        return { error: "CERT not found.", status: 404 };
+      }
 
-    const certName = existingCert[0].shortName;
+      const certName = existingCert[0].shortName;
 
-    // Since deleting a CERT cascades to officerCerts and certUnits in the database schema 
-    // (via onDelete: "cascade" in references), we can just delete the cert directly.
-    await db.delete(certs).where(eq(certs.id, certId));
+      const [actor] = await tx
+        .select()
+        .from(officers)
+        .where(eq(officers.id, session.userId))
+        .limit(1);
+      const actorName = actor?.name || "Super Admin";
 
-    const [actor] = await db
-      .select()
-      .from(officers)
-      .where(eq(officers.id, session.userId))
-      .limit(1);
-    const actorName = actor?.name || "Super Admin";
+      await tx.insert(auditLogs).values({
+        officerId: session.userId,
+        officerName: actorName,
+        action: "DELETED",
+        changes: [
+          { field: "Target CERT", old: certName, new: "" }
+        ],
+      });
 
-    await db.insert(auditLogs).values({
-      officerId: session.userId,
-      officerName: actorName,
-      action: "DELETED",
-      changes: [
-        { field: "Target CERT", old: certName, new: "" }
-      ],
+      await tx.delete(certs).where(eq(certs.id, certId));
+
+      return { success: true };
     });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     revalidatePath("/admin/certs");
 
     return NextResponse.json({ success: true, message: "CERT deleted successfully." });
   } catch (error: unknown) {
     console.error("CERT DELETE ERROR:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred while deleting CERT." }, { status: 500 });
   }
 }

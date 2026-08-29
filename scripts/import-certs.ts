@@ -32,7 +32,7 @@ async function main() {
     columns: true,
     skip_empty_lines: true,
     bom: true // Handles the UTF-8 BOM if present
-  });
+  }) as Record<string, string>[];
 
   // Skip the first record because it's the Thai headers
   const dataRecords = records.slice(1);

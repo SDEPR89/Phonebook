@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
 import { officers, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { isValidUuid } from "@/app/lib/validators";
 
 export async function DELETE(req: Request) {
   try {
@@ -17,66 +18,68 @@ export async function DELETE(req: Request) {
 
     const { officerId } = await req.json();
 
-    if (!officerId) {
+    if (!officerId || !isValidUuid(officerId)) {
       return NextResponse.json(
-        { error: "Officer ID is required." },
+        { error: "Valid Officer ID is required." },
         { status: 400 },
       );
     }
 
-    // 1. Fetch existing officer details before deletion
-    const existingOfficer = await db
-      .select()
-      .from(officers)
-      .where(eq(officers.id, officerId))
-      .limit(1);
+    const result = await db.transaction(async (tx) => {
+      // 1. Fetch existing officer details before deletion
+      const existingOfficer = await tx
+        .select()
+        .from(officers)
+        .where(eq(officers.id, officerId))
+        .limit(1);
 
-    if (existingOfficer.length === 0) {
-      return NextResponse.json(
-        { error: "Officer not found." },
-        { status: 404 },
-      );
-    }
+      if (existingOfficer.length === 0) {
+        return { error: "Officer not found.", status: 404 };
+      }
 
-    const officer = existingOfficer[0];
+      const officer = existingOfficer[0];
 
-    if (officer.systemRole === "superadmin" && session.role !== "superadmin") {
-      return NextResponse.json(
-        { error: "Only Super Admins can delete Super Admin accounts." },
-        { status: 403 }
-      );
-    }
+      if (officer.systemRole === "superadmin" && session.role !== "superadmin") {
+        return { error: "Only Super Admins can delete Super Admin accounts.", status: 403 };
+      }
 
-    // 2. Insert DELETED record into Audit Logs
-    const [actor] = await db
-      .select()
-      .from(officers)
-      .where(eq(officers.id, session.userId))
-      .limit(1);
+      // 2. Insert DELETED record into Audit Logs
+      const [actor] = await tx
+        .select()
+        .from(officers)
+        .where(eq(officers.id, session.userId))
+        .limit(1);
 
-    const actorName = actor?.name || "Admin";
+      const actorName = actor?.name || "Admin";
 
-    const deletedName = officer.name || "Unknown Officer";
-    const deletedEmail = officer.email || "";
+      const deletedName = officer.name || "Unknown Officer";
+      const deletedEmail = officer.email || "";
 
-    await db.insert(auditLogs).values({
-      officerId: session.userId,
-      officerName: actorName,
-      action: "DELETED",
-      changes: [
-        {
-          field: "Deleted Officer",
-          old: deletedName,
-          new: "Removed",
-        },
-        ...(deletedEmail
-          ? [{ field: "Email", old: deletedEmail, new: "Removed" }]
-          : []),
-      ],
+      await tx.insert(auditLogs).values({
+        officerId: session.userId,
+        officerName: actorName,
+        action: "DELETED",
+        changes: [
+          {
+            field: "Deleted Officer",
+            old: deletedName,
+            new: "Removed",
+          },
+          ...(deletedEmail
+            ? [{ field: "Email", old: deletedEmail, new: "Removed" }]
+            : []),
+        ],
+      });
+
+      // 3. Delete the officer
+      await tx.delete(officers).where(eq(officers.id, officerId));
+
+      return { success: true };
     });
 
-    // 3. Delete the officer
-    await db.delete(officers).where(eq(officers.id, officerId));
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     revalidatePath("/admin");
     revalidatePath("/admin/history");
@@ -84,8 +87,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error("DELETE ROUTE ERROR:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred while deleting officer." }, { status: 500 });
   }
 }

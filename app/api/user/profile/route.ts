@@ -97,16 +97,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [officer] = await db
-      .select()
-      .from(officers)
-      .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
-      .limit(1);
-
-    if (!officer) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
@@ -133,102 +123,136 @@ export async function PUT(request: NextRequest) {
       avatarUrl = `data:${avatarFile.type};base64,${buffer.toString("base64")}`;
     }
 
-    const updatePayload: {
-      name: string;
-      email: string;
-      avatarUrl?: string;
-      updatedAt: Date;
-    } = {
-      name: name.trim(),
-      email: email.trim(),
-      updatedAt: new Date(),
-    };
-    if (avatarUrl !== undefined) {
-      updatePayload.avatarUrl = avatarUrl;
-    }
+    const result = await db.transaction(async (tx) => {
+      const [officer] = await tx
+        .select()
+        .from(officers)
+        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+        .limit(1);
 
-    // For Audit Logs
-    const changes: { field: string; old: string; new: string }[] = [];
-    if (officer.name !== name.trim()) {
-      changes.push({ field: "Name", old: officer.name || "", new: name.trim() });
-    }
-    if (officer.email !== email.trim()) {
-      changes.push({ field: "Email", old: officer.email || "", new: email.trim() });
-    }
-
-    const existingPhoneResult = await db
-      .select()
-      .from(phones)
-      .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
-    
-    const existingPhoneNumber = existingPhoneResult[0]?.phoneNumber || "";
-    if (phone !== null && phone.trim() !== existingPhoneNumber) {
-      changes.push({ field: "Phone", old: existingPhoneNumber, new: phone.trim() });
-    }
-
-    await db
-      .update(officers)
-      .set(updatePayload)
-      .where(eq(officers.id, officer.id));
-
-    if (phone !== null) {
-      if (existingPhoneResult.length > 0) {
-        await db
-          .update(phones)
-          .set({ phoneNumber: phone.trim(), updatedAt: new Date() })
-          .where(eq(phones.id, existingPhoneResult[0].id));
-      } else if (phone.trim()) {
-        await db.insert(phones).values({
-          officerId: officer.id,
-          phoneNumber: phone.trim(),
-        });
+      if (!officer) {
+        return { error: "User not found", status: 404 };
       }
-    }
 
-    const newPassword = formData.get("newPassword") as string;
-    if (newPassword && newPassword.trim()) {
-      const { hash: passwordHash, salt } = hashPassword(newPassword.trim());
+      const updatePayload: {
+        name: string;
+        email: string;
+        avatarUrl?: string;
+        updatedAt: Date;
+      } = {
+        name: name.trim(),
+        email: email.trim(),
+        updatedAt: new Date(),
+      };
+      if (avatarUrl !== undefined) {
+        updatePayload.avatarUrl = avatarUrl;
+      }
 
-      const [existingCred] = await db
+      // For Audit Logs
+      const changes: { field: string; old: string; new: string }[] = [];
+      if (officer.name !== name.trim()) {
+        changes.push({ field: "Name", old: officer.name || "", new: name.trim() });
+      }
+      const emailChanged = officer.email !== email.trim();
+      if (emailChanged) {
+        changes.push({ field: "Email", old: officer.email || "", new: email.trim() });
+      }
+
+      const existingPhoneResult = await tx
+        .select()
+        .from(phones)
+        .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
+      
+      const existingPhoneNumber = existingPhoneResult[0]?.phoneNumber || "";
+      const trimmedPhone = phone !== null ? phone.trim() : null;
+
+      if (trimmedPhone !== null && trimmedPhone !== existingPhoneNumber) {
+        changes.push({ field: "Phone", old: existingPhoneNumber, new: trimmedPhone });
+      }
+
+      await tx
+        .update(officers)
+        .set(updatePayload)
+        .where(eq(officers.id, officer.id));
+
+      if (trimmedPhone !== null) {
+        if (trimmedPhone === "") {
+          // If phone is cleared, soft-delete existing phone record
+          if (existingPhoneResult.length > 0) {
+            await tx
+              .update(phones)
+              .set({ deletedAt: new Date() })
+              .where(eq(phones.id, existingPhoneResult[0].id));
+          }
+        } else if (existingPhoneResult.length > 0) {
+          await tx
+            .update(phones)
+            .set({ phoneNumber: trimmedPhone, updatedAt: new Date() })
+            .where(eq(phones.id, existingPhoneResult[0].id));
+        } else {
+          await tx.insert(phones).values({
+            officerId: officer.id,
+            phoneNumber: trimmedPhone,
+          });
+        }
+      }
+
+      const newPassword = formData.get("newPassword") as string;
+      const [existingCred] = await tx
         .select()
         .from(loginCredentials)
         .where(eq(loginCredentials.officerId, officer.id))
         .limit(1);
 
-      if (existingCred) {
-        await db
-          .update(loginCredentials)
-          .set({
+      if (newPassword && newPassword.trim()) {
+        const { hash: passwordHash, salt } = hashPassword(newPassword.trim());
+
+        if (existingCred) {
+          await tx
+            .update(loginCredentials)
+            .set({
+              passwordHash,
+              salt,
+              username: email.trim(),
+              updatedAt: new Date(),
+            })
+            .where(eq(loginCredentials.id, existingCred.id));
+        } else {
+          await tx.insert(loginCredentials).values({
+            officerId: officer.id,
+            username: email.trim(),
             passwordHash,
             salt,
-            username: email.trim(),
-            updatedAt: new Date(),
-          })
+          });
+        }
+
+        changes.push({ field: "Password", old: "••••••••", new: "••••••••" });
+      } else if (emailChanged && existingCred) {
+        // Sync loginCredentials username if email changed without password change
+        await tx
+          .update(loginCredentials)
+          .set({ username: email.trim(), updatedAt: new Date() })
           .where(eq(loginCredentials.id, existingCred.id));
-      } else {
-        await db.insert(loginCredentials).values({
-          officerId: officer.id,
-          username: email.trim(),
-          passwordHash,
-          salt,
+      }
+
+      // Insert Audit Log if there are changes
+      if (changes.length > 0) {
+        await tx.insert(auditLogs).values({
+          officerId: session.userId,
+          officerName: officer.name || "Unknown Officer",
+          action: "UPDATED",
+          changes: changes,
         });
       }
 
-      // Audit log formatting: always mask password changes securely as bullets
-      changes.push({ field: "Password", old: "••••••••", new: "••••••••" });
+      return { success: true, changes, unchanged: changes.length === 0 && avatarUrl === undefined };
+    });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    // Insert Audit Log if there are changes
-    if (changes.length > 0) {
-      await db.insert(auditLogs).values({
-        officerId: session.userId,
-        officerName: officer.name || "Unknown Officer",
-        action: "UPDATED",
-        changes: changes,
-      });
-    }
-
-    if (changes.length === 0 && avatarUrl === undefined) {
+    if (result.unchanged) {
       return NextResponse.json({ success: true, unchanged: true, message: "Nothing changed." });
     }
 
@@ -236,8 +260,14 @@ export async function PUT(request: NextRequest) {
     revalidatePath("/admin/history");
 
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
     console.error("PUT profile error:", err);
+    if (err?.code === "23505" || err?.message?.includes("unique constraint")) {
+      return NextResponse.json(
+        { error: "An officer or phone number with these details already exists." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
@@ -250,29 +280,37 @@ export async function DELETE() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [officer] = await db
-      .select()
-      .from(officers)
-      .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
-      .limit(1);
+    const result = await db.transaction(async (tx) => {
+      const [officer] = await tx
+        .select()
+        .from(officers)
+        .where(and(eq(officers.id, session.userId), isNull(officers.deletedAt)))
+        .limit(1);
 
-    if (!officer) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      if (!officer) {
+        return { error: "User not found", status: 404 };
+      }
+
+      const now = new Date();
+
+      // 1. Soft delete officer record
+      await tx
+        .update(officers)
+        .set({ deletedAt: now })
+        .where(eq(officers.id, officer.id));
+
+      // 2. Soft delete associated phone record
+      await tx
+        .update(phones)
+        .set({ deletedAt: now })
+        .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
+
+      return { success: true };
+    });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    const now = new Date();
-
-    // 1. Soft delete officer record
-    await db
-      .update(officers)
-      .set({ deletedAt: now })
-      .where(eq(officers.id, officer.id));
-
-    // 2. Soft delete associated phone record
-    await db
-      .update(phones)
-      .set({ deletedAt: now })
-      .where(and(eq(phones.officerId, officer.id), isNull(phones.deletedAt)));
 
     return NextResponse.json({
       success: true,
