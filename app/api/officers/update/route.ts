@@ -77,7 +77,10 @@ export async function POST(req: Request) {
         }
       }
 
-      // 2. Fetch linked cert and role
+      // 2. Guard: only superadmin may change cert/role assignments
+      //    Evaluated after we know the current DB values (below).
+
+      // 3. Fetch linked cert and role
       const currentCertRoleLink = await tx
         .select({
           certId: certs.id,
@@ -97,7 +100,17 @@ export async function POST(req: Request) {
       const oldRoleName = currentCertRoleLink[0]?.roleName || "None";
       let junctionId = currentCertRoleLink[0]?.junctionId;
 
-      // 3. Track Changes
+      // Only block if the admin is actually *changing* the cert/role
+      const isCertChanging = certName && certName !== oldCertName;
+      if (isCertChanging && session.role !== "superadmin") {
+        return {
+          error: "Only Super Admins can change an officer's CERT assignment.",
+          status: 403,
+        };
+      }
+
+      // 4. Track Changes
+
       const changes: Array<{ field: string; old: string; new: string }> = [];
 
       if (currentOfficer.name !== name) {

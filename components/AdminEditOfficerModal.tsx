@@ -208,6 +208,9 @@ export default function AdminEditOfficerModal({
   const isProtectedTarget =
     officer.systemRole !== "officer" && viewerRole !== "superadmin";
 
+  // Admins can edit name/email/avatar/role but NOT cert assignment
+  const isCertLocked = viewerRole !== "superadmin";
+
   const handleFile = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       setAvatarFile(file);
@@ -272,11 +275,11 @@ export default function AdminEditOfficerModal({
       return;
     }
 
-    // Check if any fields changed
+    // Check if any editable fields changed
     const isUnchanged =
       name.trim() === (officer.name || "").trim() &&
       email.trim() === (officer.email || "").trim() &&
-      certName.trim() === (officer.certName || "").trim() &&
+      (isCertLocked || certName.trim() === (officer.certName || "").trim()) &&
       roleName.trim() === (officer.roleName || "").trim() &&
       systemRole === (officer.systemRole || "officer") &&
       !avatarFile;
@@ -478,15 +481,20 @@ export default function AdminEditOfficerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-300">
               ชื่อ CERT
+              {isCertLocked && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                  Superadmin only
+                </span>
+              )}
             </label>
             <Dropdown
               options={certOptions}
               value={certName}
               onChange={setCertName}
               placeholder="Select Cert Name"
-              disabled={isProtectedTarget || isSaving || isDeleting}
+              disabled={isProtectedTarget || isCertLocked || isSaving || isDeleting}
             />
           </div>
 
@@ -502,6 +510,7 @@ export default function AdminEditOfficerModal({
               disabled={isProtectedTarget || isSaving || isDeleting}
             />
           </div>
+
 
           {/* System Role Selection */}
           <div>
