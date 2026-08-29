@@ -73,6 +73,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(suggestions);
   } catch (error) {
     console.error("Search API Error:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({ error: "Search failed. Please try again." }, { status: 500 });
   }
 }

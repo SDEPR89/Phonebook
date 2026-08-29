@@ -15,8 +15,9 @@ import {
   loginCredentials,
   certUnits,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import crypto from "crypto";
+import { eq, and } from "drizzle-orm";
+import { hashPassword } from "@/app/lib/crypto";
+import { isValidEmail } from "@/app/lib/validators";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,6 +47,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format." },
+        { status: 400 },
+      );
+    }
+
     let systemRole: "officer" | "admin" | "superadmin" = "officer";
     if (session.role !== "superadmin") {
       if (requestedSystemRole && requestedSystemRole !== "officer") {
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
       systemRole = "officer";
     } else {
       if (["officer", "admin", "superadmin"].includes(requestedSystemRole)) {
-        systemRole = requestedSystemRole as any;
+        systemRole = requestedSystemRole as "officer" | "admin" | "superadmin";
       }
     }
 
@@ -83,14 +91,7 @@ export async function POST(request: NextRequest) {
 
     // 1.5 Insert Login Credentials
     if (password && password.trim()) {
-      const salt = crypto.randomBytes(16).toString("hex");
-      const passwordHash = crypto.pbkdf2Sync(
-        password.trim(),
-        salt,
-        1000,
-        64,
-        "sha512"
-      ).toString("hex");
+      const { hash: passwordHash, salt } = hashPassword(password.trim());
 
       await db.insert(loginCredentials).values({
         officerId: newOfficer.id,
@@ -147,13 +148,24 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const [newOfficerCert] = await db
-        .insert(officerCerts)
-        .values({
-          officerId: newOfficer.id,
-          certId: existingCert.id,
-        })
-        .returning();
+      // Guard: find existing membership before inserting to avoid duplicates
+      const [existingMembership] = await db
+        .select({ id: officerCerts.id })
+        .from(officerCerts)
+        .where(
+          and(
+            eq(officerCerts.officerId, newOfficer.id),
+            eq(officerCerts.certId, existingCert.id)
+          )
+        )
+        .limit(1);
+
+      const [newOfficerCert] = existingMembership
+        ? [existingMembership]
+        : await db
+            .insert(officerCerts)
+            .values({ officerId: newOfficer.id, certId: existingCert.id })
+            .returning();
 
       if (roleName && roleName.trim()) {
         let [existingRole] = await db

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { getSession } from "@/app/lib/auth";
 import { officers, officerCerts, certs, units, areas, roles, officerCertRoles, auditLogs, certUnits } from "@/db/schema";
 import { eq, ilike } from "drizzle-orm";
+import { isValidEmail } from "@/app/lib/validators";
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +30,13 @@ export async function POST(req: Request) {
     if (!officerId || !name || !email) {
       return NextResponse.json(
         { error: "Officer ID, Name, and Email are required." },
+        { status: 400 },
+      );
+    }
+
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format." },
         { status: 400 },
       );
     }

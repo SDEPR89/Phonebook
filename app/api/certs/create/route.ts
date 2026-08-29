@@ -69,6 +69,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate providedAreaId exists before using it
+    if (providedAreaId) {
+      const [areaExists] = await db
+        .select({ id: areas.id })
+        .from(areas)
+        .where(eq(areas.id, providedAreaId))
+        .limit(1);
+      if (!areaExists) {
+        return NextResponse.json(
+          { error: "Invalid area ID. The specified area does not exist." },
+          { status: 400 }
+        );
+      }
+    }
+
     // Insert the new CERT
     const [newCert] = await db.insert(certs).values({
       shortName,

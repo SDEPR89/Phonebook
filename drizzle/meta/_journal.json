@@ -57,6 +57,13 @@
       "when": 1787842091888,
       "tag": "0007_strange_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787992086084,
+      "tag": "0008_dear_hemingway",
+      "breakpoints": true
     }
   ]
 }

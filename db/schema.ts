@@ -243,10 +243,8 @@ export const dataCorrectionReports = pgTable(
   ],
 );
 export const auditLogs = pgTable("audit_logs", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  officerId: text("officer_id").notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  officerId: uuid("officer_id").references(() => officers.id, { onDelete: "set null" }),
   officerName: text("officer_name").notNull(),
   action: text("action").notNull(), // 'CREATED', 'UPDATED', 'DELETED'
   changes: jsonb("changes"), // e.g. { field: "email", old: "a@b.com", new: "c@d.com" }
@@ -298,6 +296,7 @@ export const officersRelations = relations(officers, ({ one, many }) => ({
     relationName: "targetOfficer",
   }),
   submittedReports: many(dataCorrectionReports, { relationName: "reporter" }),
+  resolvedReports: many(dataCorrectionReports, { relationName: "resolver" }),
 }));
 
 export const phonesRelations = relations(phones, ({ one }) => ({
@@ -399,6 +398,7 @@ export const dataCorrectionReportsRelations = relations(
     resolver: one(officers, {
       fields: [dataCorrectionReports.resolvedBy],
       references: [officers.id],
+      relationName: "resolver",
     }),
   }),
 );

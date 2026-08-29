@@ -13,7 +13,8 @@ import {
   loginCredentials,
 } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import crypto from "crypto";
+import { hashPassword } from "@/app/lib/crypto";
+import { isValidEmail } from "@/app/lib/validators";
 
 // GET profile with created_at & updated_at timestamps
 export async function GET() {
@@ -119,6 +120,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format." },
+        { status: 400 },
+      );
+    }
+
     let avatarUrl: string | undefined = undefined;
     if (avatarFile && avatarFile.size > 0) {
       const buffer = Buffer.from(await avatarFile.arrayBuffer());
@@ -179,14 +187,7 @@ export async function PUT(request: NextRequest) {
 
     const newPassword = formData.get("newPassword") as string;
     if (newPassword && newPassword.trim()) {
-      const salt = crypto.randomBytes(16).toString("hex");
-      const passwordHash = crypto.pbkdf2Sync(
-        newPassword.trim(),
-        salt,
-        1000,
-        64,
-        "sha512"
-      ).toString("hex");
+      const { hash: passwordHash, salt } = hashPassword(newPassword.trim());
 
       const [existingCred] = await db
         .select()

@@ -45,8 +45,18 @@ export default function ContactPage() {
         <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <div>
@@ -55,9 +65,12 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="mt-4">
-            <a href="mailto:thaicert@ncsa.or.th" className="text-sm font-medium text-indigo-300 hover:text-white transition-colors">
-              thaicert@ncsa.or.th 
-            </a> 
+            <a
+              href="mailto:thaicert@ncsa.or.th"
+              className="text-sm font-medium text-indigo-300 hover:text-white transition-colors"
+            >
+              thaicert@ncsa.or.th
+            </a>
           </div>
         </div>
 
@@ -65,9 +78,23 @@ export default function ContactPage() {
         <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
             </div>
             <div>
@@ -76,7 +103,8 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="mt-4 text-sm text-indigo-300">
-            120 หมู่ 3 อาคารซี ชั้น 10 ศูนย์ราชการเฉลิมพระเกียรติ 80 พรรษา 5 ธันวาคม 2550 ถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่ กรุงเทพฯ 10210
+            120 หมู่ 3 อาคารซี ชั้น 10 ศูนย์ราชการเฉลิมพระเกียรติ 80 พรรษา 5
+            ธันวาคม 2550 ถนนแจ้งวัฒนะ แขวงทุ่งสองห้อง เขตหลักสี่ กรุงเทพฯ 10210
           </div>
         </div>
 
@@ -84,8 +112,18 @@ export default function ContactPage() {
         <div className="flex flex-col justify-start rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md transition-all duration-300 hover:border-indigo-400/50 hover:bg-white/15 shadow-xl sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <div>
@@ -94,8 +132,11 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="mt-4 text-sm text-indigo-300">
-            จันทร์ – ศุกร์: 8:30 น. – 4:30 น.<br />
-            <span className="text-xs text-indigo-200/60">Emergency support active 24/7</span>
+            จันทร์ – ศุกร์: 8:30 น. – 16:30 น.
+            <br />
+            <span className="text-xs text-indigo-200/60">
+              Emergency support active 24/7
+            </span>
           </div>
         </div>
       </div>
