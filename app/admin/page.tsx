@@ -29,6 +29,20 @@ export default async function AdminPage() {
   let initialOfficers: AdminOfficerItem[] = [];
 
   try {
+    const viewerCertIds = new Set<string>();
+
+    if (viewerRole === "admin") {
+      const userOfficerCerts = await db.query.officerCerts.findMany({
+        where: (oc, { eq }) => eq(oc.officerId, session.userId),
+      });
+      userOfficerCerts.forEach((oc) => viewerCertIds.add(oc.certId));
+
+      const userAdminCerts = await db.query.certs.findMany({
+        where: (c, { eq }) => eq(c.adminId, session.userId),
+      });
+      userAdminCerts.forEach((c) => viewerCertIds.add(c.id));
+    }
+
     const dbOfficers = await db.query.officers.findMany({
       with: {
         officerCerts: {
@@ -44,11 +58,22 @@ export default async function AdminPage() {
       },
     });
 
-    // Both admin and superadmin can view all accounts (officer, admin, superadmin)
-    const allowedRoles = ["officer", "admin", "superadmin"];
-
     initialOfficers = dbOfficers
-      .filter((o) => allowedRoles.includes(o.systemRole ?? "officer"))
+      .filter((o) => {
+        // Hide currently logged-in user from the user list
+        if (o.id === session.userId) return false;
+
+        const role = o.systemRole ?? "officer";
+
+        if (viewerRole === "superadmin") {
+          return ["officer", "admin", "superadmin"].includes(role);
+        }
+
+        // Admin view: see Super Admins or Officers/Accounts in their assigned CERT(s)
+        if (role === "superadmin") return true;
+
+        return o.officerCerts.some((oc) => viewerCertIds.has(oc.certId));
+      })
       .map((officer) => ({
         officerId: officer.id,
         name: officer.name,
