@@ -257,9 +257,12 @@ export default function HomePage() {
               <SearchBar />
             </div>
           ) : (
-            <p className="max-w-md rounded-2xl border border-white/40 bg-white/90 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur-md shadow-lg">
+            <Link
+              href="/login"
+              className="inline-block max-w-md rounded-2xl border border-white/40 bg-white/90 px-6 py-3 text-sm font-medium text-slate-800 backdrop-blur-md shadow-lg transition-all hover:bg-white hover:scale-105 hover:shadow-xl cursor-pointer"
+            >
               กรุณาเข้าสู่ระบบเพื่อค้นหาสมุดโทรศัพท์
-            </p>
+            </Link>
           )}
         </div>
 

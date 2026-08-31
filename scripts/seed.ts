@@ -2,7 +2,6 @@ import "dotenv/config";
 import { parse } from "csv-parse/sync";
 import * as fs from "fs";
 import * as path from "path";
-import * as crypto from "crypto";
 import { db } from "../db";
 import {
   officers,
@@ -13,16 +12,11 @@ import {
   certUnits,
 } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { hashPassword } from "../app/lib/crypto";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function hashPassword(password: string): { hash: string; salt: string } {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.createHmac("sha256", salt).update(password).digest("hex");
-  return { hash, salt };
-}
 
 function parseStatus(thaiStatus: string) {
   if (thaiStatus === "จัดตั้งเสร็จสมบูรณ์") return "establishment_completed";
@@ -75,13 +69,15 @@ async function upsertUnit(name: string): Promise<string> {
 // STEP 1 — Superadmin account
 // ---------------------------------------------------------------------------
 
-const SUPERADMIN_NAME = "Super Administrator";
+const SUPERADMIN_NAME = "System Administrator";
 const SUPERADMIN_EMAIL = "superadmin@example.com";
 const SUPERADMIN_USERNAME = "superadmin@example.com";
 const SUPERADMIN_PASSWORD = "superadmin123";
 
 async function seedSuperadmin() {
   console.log("\n── Superadmin ──────────────────────────────────");
+
+  const { hash, salt } = hashPassword(SUPERADMIN_PASSWORD);
 
   const existing = await db
     .select()
@@ -90,7 +86,39 @@ async function seedSuperadmin() {
     .limit(1);
 
   if (existing.length > 0) {
-    console.log(`⏭  Already exists (id: ${existing[0].id}), skipping.`);
+    const adminId = existing[0].id;
+
+    // Update existing credentials to use PBKDF2 hash
+    const existingCred = await db
+      .select()
+      .from(loginCredentials)
+      .where(eq(loginCredentials.officerId, adminId))
+      .limit(1);
+
+    if (existingCred.length > 0) {
+      await db
+        .update(loginCredentials)
+        .set({
+          username: SUPERADMIN_USERNAME,
+          passwordHash: hash,
+          salt,
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(loginCredentials.id, existingCred[0].id));
+    } else {
+      await db.insert(loginCredentials).values({
+        officerId: adminId,
+        username: SUPERADMIN_USERNAME,
+        passwordHash: hash,
+        salt,
+      });
+    }
+
+    console.log(`✅ Superadmin password updated (id: ${adminId}).`);
+    console.log(`   email    : ${SUPERADMIN_EMAIL}`);
+    console.log(`   password : ${SUPERADMIN_PASSWORD}`);
     return;
   }
 
@@ -102,8 +130,6 @@ async function seedSuperadmin() {
       systemRole: "superadmin",
     })
     .returning();
-
-  const { hash, salt } = hashPassword(SUPERADMIN_PASSWORD);
 
   await db.insert(loginCredentials).values({
     officerId: admin.id,
