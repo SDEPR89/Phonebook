@@ -225,3 +225,12 @@ Route protection is enforced in `middleware.ts`:
 
 **Seed script fails**
 - Ensure `db:push` or `db:migrate` has been run first so all tables exist before seeding.
+
+---
+
+## 🚀 Future Improvements
+
+### 1. Soft Delete & Account Lifecycle Management
+- **Account Restoration (Restore Account):** Provide an administrative interface and API endpoints to restore soft-deleted officer accounts (`deleted_at IS NOT NULL`) within the active grace period.
+- **Automated 90-Day Hard Purge (Data Retention Policy):** Implement a scheduled cron worker/background task to permanently purge soft-deleted records and associated data from the database after 90 days pass (`deleted_at <= NOW() - INTERVAL '90 days'`) to ensure compliance with data retention and privacy policies.
+
