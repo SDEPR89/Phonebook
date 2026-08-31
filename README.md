@@ -49,7 +49,7 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 JWT_SECRET=your-super-secret-token-32-chars-or-more
 ```
 
-> **Tip:** If you use Neon or Supabase, copy the connection string from the dashboard.
+> **Tip:** You can generate a secure secret with `openssl rand -base64 32`. If you use Neon or Supabase, copy the connection string from the dashboard.
 
 ### 4. Push the schema to the database
 
@@ -202,7 +202,7 @@ Route protection is enforced in `middleware.ts`:
 ## 🧑‍💻 Development Notes
 
 - **Environment file:** Never commit `.env`. Use `.env.example` as a template.
-- **JWT_SECRET** must be **32+ characters** — shorter secrets will break token verification.
+- **JWT_SECRET** must be **32+ characters** — shorter secrets will break token verification. Generate one with `openssl rand -base64 32`.
 - **Soft deletes:** The `officers`, `phones`, `certs`, and related tables use a `deleted_at` column for soft deletion. Always filter with `WHERE deleted_at IS NULL` in queries.
 - **CSV import:** The `data_001.csv` file is the initial data source for CERT records. The import script (`db:import-certs`) is idempotent — running it multiple times is safe.
 - **Audit logs:** Admin actions are recorded in the `audit_logs` table automatically.
