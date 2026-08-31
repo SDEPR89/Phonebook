@@ -11,7 +11,6 @@ import {
   units,
   areas,
   certUnits,
-  roles,
 } from "../db/schema";
 import { eq } from "drizzle-orm";
 
@@ -21,10 +20,7 @@ import { eq } from "drizzle-orm";
 
 function hashPassword(password: string): { hash: string; salt: string } {
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
-    .createHmac("sha256", salt)
-    .update(password)
-    .digest("hex");
+  const hash = crypto.createHmac("sha256", salt).update(password).digest("hex");
   return { hash, salt };
 }
 
@@ -42,7 +38,10 @@ function parseContacts(phoneStr: string) {
     .filter(Boolean)
     .map((part) => {
       if (part.toLowerCase().includes("fax")) {
-        return { type: "fax" as const, number: part.replace(/\(fax\)/i, "").trim() };
+        return {
+          type: "fax" as const,
+          number: part.replace(/\(fax\)/i, "").trim(),
+        };
       }
       return { type: "phone" as const, number: part };
     });
@@ -50,7 +49,11 @@ function parseContacts(phoneStr: string) {
 
 async function upsertArea(name: string): Promise<string> {
   const label = name || "ไม่ระบุด้าน";
-  const existing = await db.select().from(areas).where(eq(areas.name, label)).limit(1);
+  const existing = await db
+    .select()
+    .from(areas)
+    .where(eq(areas.name, label))
+    .limit(1);
   if (existing.length > 0) return existing[0].id;
   const [row] = await db.insert(areas).values({ name: label }).returning();
   return row.id;
@@ -58,7 +61,11 @@ async function upsertArea(name: string): Promise<string> {
 
 async function upsertUnit(name: string): Promise<string> {
   const label = name || "ไม่ระบุหน่วยงาน";
-  const existing = await db.select().from(units).where(eq(units.name, label)).limit(1);
+  const existing = await db
+    .select()
+    .from(units)
+    .where(eq(units.name, label))
+    .limit(1);
   if (existing.length > 0) return existing[0].id;
   const [row] = await db.insert(units).values({ name: label }).returning();
   return row.id;
@@ -68,10 +75,10 @@ async function upsertUnit(name: string): Promise<string> {
 // STEP 1 — Superadmin account
 // ---------------------------------------------------------------------------
 
-const SUPERADMIN_NAME = "System Administrator";
-const SUPERADMIN_EMAIL = "sysadmin@cert.or.th";
-const SUPERADMIN_USERNAME = "sysadmin";
-const SUPERADMIN_PASSWORD = "ChangeMe@1234"; // ⚠️ Change after first login
+const SUPERADMIN_NAME = "Super Administrator";
+const SUPERADMIN_EMAIL = "superadmin@example.com";
+const SUPERADMIN_USERNAME = "superadmin@example.com";
+const SUPERADMIN_PASSWORD = "superadmin123";
 
 async function seedSuperadmin() {
   console.log("\n── Superadmin ──────────────────────────────────");
@@ -106,38 +113,12 @@ async function seedSuperadmin() {
   });
 
   console.log(`✅ Superadmin created.`);
-  console.log(`   username : ${SUPERADMIN_USERNAME}`);
-  console.log(`   password : ${SUPERADMIN_PASSWORD}  ← Change this immediately!`);
+  console.log(`   email    : ${SUPERADMIN_EMAIL}`);
+  console.log(`   password : ${SUPERADMIN_PASSWORD}`);
 }
 
 // ---------------------------------------------------------------------------
-// STEP 2 — Default roles (idempotent)
-// ---------------------------------------------------------------------------
-
-const DEFAULT_ROLES = [
-  "Director",
-  "Cybersecurity Manager",
-  "Incident Handler",
-  "Threat Intelligence Analyst",
-];
-
-async function seedRoles() {
-  console.log("\n── Roles ───────────────────────────────────────");
-  let created = 0;
-  for (const name of DEFAULT_ROLES) {
-    const existing = await db.select().from(roles).where(eq(roles.name, name)).limit(1);
-    if (existing.length === 0) {
-      await db.insert(roles).values({ name });
-      created++;
-    }
-  }
-  console.log(
-    `✅ Roles ready (${created} new, ${DEFAULT_ROLES.length - created} already existed).`
-  );
-}
-
-// ---------------------------------------------------------------------------
-// STEP 3 — All CERTs from data_001.csv
+// STEP 2 — All CERTs from data_001.csv
 // ---------------------------------------------------------------------------
 
 async function seedCerts() {
@@ -163,16 +144,16 @@ async function seedCerts() {
   let skipped = 0;
 
   for (const record of dataRows) {
-    const shortName    = record["Column4"]?.trim();
+    const shortName = record["Column4"]?.trim();
     const fullNameThai = record["Column2"]?.trim();
-    const fullNameEng  = record["Column3"]?.trim();
-    const status       = record["Column5"]?.trim();
-    const unitName     = record["Column6"]?.trim();
-    const areaName     = record["Column7"]?.trim();
-    const location     = record["Column8"]?.trim();
+    const fullNameEng = record["Column3"]?.trim();
+    const status = record["Column5"]?.trim();
+    const unitName = record["Column6"]?.trim();
+    const areaName = record["Column7"]?.trim();
+    const location = record["Column8"]?.trim();
     const sarabanEmail = record["Column9"]?.trim();
     const sarabanPhone = record["Column10"]?.trim();
-    const logoUrl      = record["Column1"]?.trim();
+    const logoUrl = record["Column1"]?.trim();
 
     if (!shortName) continue;
 
@@ -226,7 +207,7 @@ async function seedCerts() {
   }
 
   console.log(
-    `✅ Certs done — ${inserted} inserted, ${skipped} already existed.`
+    `✅ Certs done — ${inserted} inserted, ${skipped} already existed.`,
   );
 }
 
@@ -238,7 +219,6 @@ async function seed() {
   console.log("🌱 Starting seed...");
 
   await seedSuperadmin();
-  await seedRoles();
   await seedCerts();
 
   console.log("\n🎉 Seed completed successfully!");
